@@ -37,7 +37,8 @@
                 <div class="right">
                     <div class="all money">{{all}}</div>
                     <div class="surplus money">{{surplus}}</div>
-                    <div class="connectWallet" @click="connect">连接钱包</div>
+                    <div class="connectWallet" @click="connect" v-if="!fromAddress">连接钱包</div>
+                    <div class='userAddress' v-else>{{showFrom(fromAddress)}}</div>
                 </div>
             </el-header>
             <el-main class="main">
@@ -50,6 +51,7 @@
 </template>
 <script>
 import Web3 from 'web3'
+// import abi from '../abi/ERC20.json'
 export default {
     name: '',
     data () {
@@ -69,15 +71,18 @@ export default {
                 }
             ],
             all: '$16.3M',
-            surplus: '$0.00'
+            surplus: '$0.00',
+            network: true,
+            fromAddress: '',
+            chainId: 80001 // Mumbai
         }
     },
     methods: {
         // 连接钱包
         connect() {
             if (window.ethereum) {
-                console.log(window.ethereum)
                 window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
+                    this.fromAddress = res[0]
                     this.getBalance()
                 })
             } else {
@@ -85,21 +90,71 @@ export default {
                 window.open('https://metamask.io/')
             }
         },
+        // 连接web3
+        async connectWeb3() {
+            if (window.ethereum) {
+                const that = this
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{
+                            chainId: Web3.utils.numberToHex(that.chainId) // 目标链ID
+                        }]
+                    })
+                } catch (e) {
+                    console.log(e.code)
+                }
+            }
+        },
         // 获取钱包余额
         async getBalance() {
             const web3 = new Web3(window.ethereum)
             const fromAddress = await web3.eth.getAccounts()
+            console.log(web3.currentProvider)
             web3.eth.getBalance(fromAddress[0], (err, res) => {
                 if (!err) {
                     console.log('余额：' + res / Math.pow(10, 18))
                 }
             })
         },
+        // 展示地址
+        showFrom(val) {
+            if (val) {
+                return val.substring(0, 5) + '...' + val.substring(val.length - 4)
+            } else {
+                return ''
+            }
+        },
+        // 监听账户切换
+        onChangeAccount() {
+            if (window.ethereum) {
+                const that = this
+                window.ethereum.on('accountsChanged', function(res) {
+                    that.fromAddress = res[0]
+                })
+            }
+        },
+        // 监听链是否正确
+        onChangeChain() {
+            if (window.ethereum) {
+                const that = this
+                window.ethereum.on('chainChanged', function(val) {
+                    const chainId = Web3.utils.numberToHex(that.chainId)
+                    if (val !== chainId) {
+                        console.log('链id:' + Web3.utils.hexToNumber(val))
+                        this.network = true
+                    } else {
+                        console.log('网络切换正确！')
+                    }
+                })
+            }
+        },
         init() {
             // 唤起钱包
             if (window.ethereum) {
                 window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
-                    console.log('当前钱包地址：' + res[0])
+                    this.fromAddress = res[0]
+                    this.connectWeb3()
                 })
             } else {
                 console.log('请安装MetaMask钱包')
@@ -118,7 +173,9 @@ export default {
         }
     },
     mounted () {
-        // this.init()
+        this.init()
+        this.onChangeAccount()
+        this.onChangeChain()
     }
 }
 </script>
@@ -147,6 +204,7 @@ export default {
             .right{
                 display: flex;
                 font-size: 16px;
+                align-items: center;
                 .money{
                     background: #000;
                     border-radius: 8px;
@@ -172,6 +230,24 @@ export default {
                     margin-left: 20px;
                     line-height: 40px;
                     margin-right: 30px;
+                }
+                .userAddress{
+                    margin-left: 20px;
+                    margin-right: 30px;
+                    display: flex;
+                    align-items: center;
+                    border:1px solid #e2107b;
+                    padding:8px 10px;
+                    border-radius: 8px;
+                }
+                .userAddress::after{
+                    display: block;
+                    content: '';
+                    width: 20px;
+                    height: 20px;
+                    background: url('../assets/metaMaskIcon.jpg') no-repeat;
+                    background-size: 100% 100%;
+                    margin-left: 8px;
                 }
             }
         }
