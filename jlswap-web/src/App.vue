@@ -10,10 +10,18 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-align: center;
-    color: #fff;
+    color: #0B0B0B;
 }
 body {
     margin: 0;
     font-size: 14px;
 }
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+}
+// input[type='number'] {
+//   -moz-appearance: textfield;
+// }
 </style>

@@ -1,14 +1,15 @@
 <template>
     <div class="jlswap-layout">
         <el-container class="home">
-            <el-header class="header" height="72px">
+            <el-header class="header" height="100px">
                 <div class="left">
+                    <div class="logoImg">Jml</div>
                     <div class="logo">JLSwap</div>
                     <div class="menus">
                         <el-menu class="menu"
                             :default-active="currentActivePath"
-                            active-text-color="#fff"
-                            text-color="#bfbfbf"
+                            active-text-color="#0B0B0B"
+                            text-color="#0B0B0B"
                             background-color="transparent"
                             mode='horizontal'
                             router
@@ -35,10 +36,13 @@
                     </div>
                 </div>
                 <div class="right">
-                    <div class="all money">{{all}}</div>
-                    <div class="surplus money">{{surplus}}</div>
-                    <div class="connectWallet" @click="connect" v-if="!fromAddress">连接钱包</div>
-                    <div class='userAddress' v-else>{{showFrom(fromAddress)}}</div>
+                    <div class="all money">TVL<span class="moneyNum">{{all}}</span></div>
+                    <div class="money">JML<span  class="moneyNum">{{surplus}}</span></div>
+                    <div class="connectWallet" @click="connect" v-if="!fromAddress">Connect Wallet</div>
+                    <div v-else>
+                        <div class='userAddress' v-if="network">{{showFrom(fromAddress)}}</div>
+                        <div class="connectWallet" v-if="!network">Network Error</div>
+                    </div>
                 </div>
             </el-header>
             <el-main class="main">
@@ -51,6 +55,7 @@
 </template>
 <script>
 import Web3 from 'web3'
+import utils from '../utils/storage'
 // import abi from '../abi/ERC20.json'
 export default {
     name: '',
@@ -64,15 +69,21 @@ export default {
                     ]
                 },
                 {
+                    menuName: 'Pool',
+                    path: '/pool',
+                    children: [
+                    ]
+                },
+                {
                     menuName: 'Farm',
                     path: '/farm',
                     children: [
                     ]
                 }
             ],
-            all: '$16.3M',
+            all: '$0.00',
             surplus: '$0.00',
-            network: true,
+            network: utils.load('network'),
             fromAddress: '',
             chainId: 80001 // Mumbai
         }
@@ -83,14 +94,14 @@ export default {
             if (window.ethereum) {
                 window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
                     this.fromAddress = res[0]
-                    this.getBalance()
+                    this.connectWeb3()
                 })
             } else {
                 // 唤起失败，跳转metaMask
                 window.open('https://metamask.io/')
             }
         },
-        // 连接web3
+        // 连接web3,切换节点
         async connectWeb3() {
             if (window.ethereum) {
                 const that = this
@@ -101,8 +112,12 @@ export default {
                             chainId: Web3.utils.numberToHex(that.chainId) // 目标链ID
                         }]
                     })
+                    that.network = true
+                    utils.put('network', true)
                 } catch (e) {
                     console.log(e.code)
+                    that.network = false
+                    utils.put('network', false)
                 }
             }
         },
@@ -142,20 +157,23 @@ export default {
                     const chainId = Web3.utils.numberToHex(that.chainId)
                     if (val !== chainId) {
                         console.log('链id:' + Web3.utils.hexToNumber(val))
-                        this.network = true
+                        that.network = false
+                        utils.put('network', false)
                     } else {
+                        that.network = true
+                        utils.put('network', true)
                         console.log('网络切换正确！')
                     }
                 })
             }
         },
-        init() {
-            // 唤起钱包
+        async init() {
+            // 获取账户信息
             if (window.ethereum) {
-                window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
-                    this.fromAddress = res[0]
-                    this.connectWeb3()
-                })
+                const web3 = new Web3(window.ethereum)
+                const fromAddress = await web3.eth.getAccounts()
+                this.fromAddress = fromAddress[0]
+                this.connectWeb3()
             } else {
                 console.log('请安装MetaMask钱包')
             }
@@ -185,59 +203,72 @@ export default {
         width:100vw;
         height: 100vh;
         .header {
-            background: #0d1126;
-            color: #fff;
-            padding:1rem 0.75rem;
+            background: #F5F8FC;
+            color: #0B0B0B;
+            // padding:1rem 0.75rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
             .logo{
                 cursor: pointer;
-                font-size: 28px;
+                font-size: 24px;
                 font-weight: bold;
-                margin-left: 30px;
-                margin-right: 50px;
+                margin-left: 20px;
+                margin-right: 7.3vw;
             }
             .left{
                 display: flex;
+                align-items: center;
+                .logoImg{
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    background: #CE2D32;
+                    color:#fff;
+                    font-size: 24px;
+                    margin-left: 3.125vw;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
             }
             .right{
                 display: flex;
                 font-size: 16px;
                 align-items: center;
                 .money{
-                    background: #000;
-                    border-radius: 8px;
-                    padding:0.5rem 0.75rem;
-                    // line-height: 20px;
-                    box-sizing: border-box;
-                    display: flex;
-                    align-items: center;
+                    font-size: 20px;
+                    color: #CE2D32;
+                    font-weight: bold;
+                    .moneyNum{
+                        margin-left: 6px;
+                    }
                 }
                 .all{
-                    color:rgba(124,255,107,1);
-                    font-weight: bold;
-                    margin-right: 30px;
+                    margin-right: 40px;
                 }
                 .connectWallet{
-                    background:#871061;
+                    background:#CE2D32;
+                    color:#fff;
                     cursor: pointer;
-                    border-radius: 8px;
+                    border-radius: 10px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding:0 1rem;
-                    margin-left: 20px;
-                    line-height: 40px;
-                    margin-right: 30px;
+                    padding:10px 20px;
+                    margin-left: 3.125vw;
+                    font-size: 20px;
+                    font-weight: bold;
+                    // line-height: 40px;
+                    // margin-right: 30px;
                 }
                 .userAddress{
-                    margin-left: 20px;
-                    margin-right: 30px;
+                    margin-left: 3.125vw;
+                    // margin-right: 30px;
                     display: flex;
                     align-items: center;
-                    border:1px solid #e2107b;
-                    padding:8px 10px;
+                    border:1px solid #CE2D32;
+                    padding:10px 20px;
                     border-radius: 8px;
                 }
                 .userAddress::after{
@@ -252,7 +283,7 @@ export default {
             }
         }
         .main{
-            background: linear-gradient(45deg,#141938,#301748);
+            background: #FFFFFF;
         }
     }
 }
@@ -264,33 +295,45 @@ export default {
         border-bottom: none;
     }
     .el-menu--horizontal>.el-submenu .el-submenu__title{
-        height: 40px;
-        line-height: 40px;
+        height: 60px;
+        // line-height: 60px;
+        display: flex;
+        align-items: center;
     }
     .el-menu--horizontal>.el-menu-item{
-        height: 40px;
-        line-height: 40px;
+        height: 60px;
+        // line-height: 60px;
+        margin-right: 3.125vw;
+        border-radius: 20px;
+        border-bottom:none;
+        border-bottom-color: transparent!important;
+        display: flex;
+        align-items: center;
+    }
+    .el-menu-item:last-child{
+        margin-right: 0;
     }
     .el-dropdown-menu__item, .el-menu-item{
-        font-size: 16px;
+        font-size: 24px;
     }
     .el-menu--horizontal>.el-submenu .el-submenu__title:hover{
-         background-color:transparent!important;
+         background-color:#DAE7F9!important;
     }
     .el-menu--horizontal>.is-opened .el-submenu__title:hover{
-        color:#FFF!important;
+        color:#0B0B0B!important;
     }
     .el-menu--horizontal>.is-opened .el-submenu__title i{
-        color:#FFF!important;
+        color:#0B0B0B!important;
     }
     .el-menu--horizontal>.el-menu-item.is-active{
         border-bottom:none;
         border-bottom-color: transparent!important;
         position: relative;
+        background-color:#DAE7F9!important;
     }
     .el-menu--horizontal .el-menu-item:focus,.el-menu--horizontal .el-menu-item:hover{
-        background-color:transparent!important;
-        color:#fff!important;
+        background-color:#DAE7F9!important;
+        color:#0B0B0B!important;
     }
 }
 .el-menu--popup-bottom-start{

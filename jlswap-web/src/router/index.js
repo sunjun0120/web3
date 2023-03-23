@@ -17,6 +17,10 @@ const routes = [
             {
                 path: '/farm',
                 component: () => import('@/views/farm.vue')
+            },
+            {
+                path: '/pool',
+                component: () => import('@/views/pool.vue')
             }
         ]
     }
