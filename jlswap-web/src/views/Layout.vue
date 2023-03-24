@@ -1,9 +1,9 @@
 <template>
     <div class="jlswap-layout">
         <el-container class="home">
-            <el-header class="header" height="100px">
+            <el-header class="header" height="80px">
                 <div class="left">
-                    <div class="logoImg">Jml</div>
+                    <div class="logoImg">JLS</div>
                     <div class="logo">JLSwap</div>
                     <div class="menus">
                         <el-menu class="menu"
@@ -41,7 +41,7 @@
                     <div class="connectWallet" @click="connect" v-if="!fromAddress">Connect Wallet</div>
                     <div v-else>
                         <div class='userAddress' v-if="network">{{showFrom(fromAddress)}}</div>
-                        <div class="connectWallet" v-if="!network">Network Error</div>
+                        <div class="connectWallet" v-else>Network Error</div>
                     </div>
                 </div>
             </el-header>
@@ -276,7 +276,7 @@ export default {
                     content: '';
                     width: 20px;
                     height: 20px;
-                    background: url('../assets/metaMaskIcon.jpg') no-repeat;
+                    background: url('../assets/metaMaskIcon.svg') no-repeat;
                     background-size: 100% 100%;
                     margin-left: 8px;
                 }
