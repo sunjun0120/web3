@@ -1,22 +1,38 @@
-import ETH from '../assets/ETH.png'
 import USDC from '../assets/USDC.webp'
 import USDT from '../assets/USDT.webp'
 import JLS from '../assets/JLS.png'
+import MATIC from '../assets/MATIC.png'
 export const tokenList = [
     {
-        name: 'ETH',
-        icon: ETH
+        name: 'MATIC',
+        icon: MATIC,
+        address: '0x0000000000000000000000000000000000000000',
+        decimals: 18
     },
     {
         name: 'USDC',
-        icon: USDC
+        icon: USDC,
+        address: '0x2791bca1f2de4661ed88a30c99a7a9449aa84174',
+        decimals: 6,
+        baseVal: 1
     },
     {
         name: 'USDT',
-        icon: USDT
+        icon: USDT,
+        address: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f',
+        decimals: 6
     },
+    // {
+    //     name: 'JLS',
+    //     icon: JLS,
+    //     address: '',
+    //     decimals: 18
+    // },
     {
-        name: 'JLS',
-        icon: JLS
+        name: 'JLST',
+        desc: 'test JLST',
+        icon: JLS,
+        address: '0x93e0c6f2387af2bb367bcef22643532976e4660c',
+        decimals: 18
     }
 ]

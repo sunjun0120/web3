@@ -24,7 +24,7 @@
             </div>
             <div class="token-container">
                 <div class="token token1" @click="changeToken(1)">
-                    <div class="tokenImg"></div>
+                    <div class="tokenImg"><img :src="getImg(token1)" alt=""></div>
                     <div class="tokenCheck">
                         {{ token1 }}
                     </div>
@@ -43,7 +43,7 @@
             <div :class="swapT?'swapIcon el-icon-bottom':'swapIcon el-icon-bottom rotate'" @click="swapToken"></div>
             <div class="token-container">
                 <div class="token token1" @click="changeToken(2)">
-                    <div class="tokenImg"></div>
+                    <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
                     <div class="tokenCheck">
                         {{ token2 }}
                     </div>
@@ -87,14 +87,14 @@
                 <div class="confirmExc">
                     <div class="cofirmToken cofirmToken1">
                         <div class="tokenLeft">
-                            <div class="tokenImg"></div>
+                            <div class="tokenImg"><img :src="getImg(token1)" alt=""></div>
                             <div class="tokenName">{{ token1 }}</div>
                         </div>
                         <div class="tokenRight">{{ tokenVal1 }}</div>
                     </div>
                     <div class="cofirmToken cofirmToken2">
                         <div class="tokenLeft">
-                            <div class="tokenImg"></div>
+                            <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
                             <div class="tokenName">{{ token2 }}</div>
                         </div>
                         <div class="tokenRight">{{ tokenVal2 }}</div>
@@ -124,7 +124,7 @@
         <confirm-wait ref="confirmWait"></confirm-wait>
         <confirm-success ref="confirmSuccess"></confirm-success>
         <confirm-fail ref="confirmFail"></confirm-fail>
-        <change-token ref="changeToken"></change-token>
+        <change-token ref="changeToken" @changeToken1='changeToken1' @changeToken2='changeToken2'></change-token>
     </div>
 </template>
 <script>
@@ -134,6 +134,8 @@ import ConfirmWait from '../components/swap/waitDia.vue'
 import ConfirmSuccess from '../components/swap/success.vue'
 import ConfirmFail from '../components/swap/fail.vue'
 import ChangeToken from '../components/swap/changeToken.vue'
+import { tokenList } from '../constants/tokens'
+import { ERC20 } from '../constants/ERC20'
 export default {
     name: '',
     components: {
@@ -141,9 +143,9 @@ export default {
     },
     data () {
         return {
-            token1: 'ETH',
-            token2: 'JLS',
-            balance1: 1,
+            token1: 'MATIC',
+            token2: 'JLST',
+            balance1: 0,
             balance2: 0,
             tokenVal1: null,
             tokenVal2: null,
@@ -155,24 +157,45 @@ export default {
             confirmExchange: false,
             network: utils.load('network'),
             fromAddress: '',
+            allToken: tokenList,
             settings: 0.5,
-            chainId: 80001
+            chainId: 137
         }
     },
     methods: {
-        changeToken(val) {
+        async changeToken(val) {
+            await this.getAllBalance()
             if (val === 1) {
-                this.$refs.changeToken.show1(this.token1)
+                this.$refs.changeToken.show1(this.token1, this.token2, this.allToken)
             } else {
-                this.$refs.changeToken.show2(this.token1, this.token2)
+                this.$refs.changeToken.show2(this.token1, this.token2, this.allToken)
+            }
+        },
+        changeToken1(val) {
+            this.token1 = val.name
+            this.balance1 = this.getShowBalance(val.balance)
+        },
+        changeToken2(val) {
+            this.token2 = val.name
+            this.balance2 = this.getShowBalance(val.balance)
+        },
+        getImg(val) {
+            for (const i in this.allToken) {
+                if (this.allToken[i].name === val) {
+                    return this.allToken[i].icon
+                }
             }
         },
         swapToken() {
             this.swapT = !this.swapT
             const a = this.token1
             const b = this.token2
+            const c = this.balance1
+            const d = this.balance2
             this.token1 = b
             this.token2 = a
+            this.balance1 = d
+            this.balance2 = c
         },
         changeScale() {
             this.swapE = !this.swapE
@@ -225,9 +248,37 @@ export default {
                         }]
                     })
                     that.network = true
+                    utils.put('network', true)
                 } catch (e) {
-                    that.network = false
                     console.log(e.code)
+                    if (e.code === 4902) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [
+                                    {
+                                        chainId: Web3.utils.numberToHex(that.chainId),
+                                        chainName: 'Polygon',
+                                        nativeCurrency: {
+                                            name: 'matic',
+                                            symbol: 'MATIC',
+                                            decimals: 18
+                                        },
+                                        rpcUrls: ['https://polygon.llamarpc.com'],
+                                        blockExplorerUrls: ['https://polygonscan.com']
+                                    }
+                                ]
+                            })
+                            that.network = true
+                            utils.put('network', true)
+                        } catch (error) {
+                        }
+                    } else if (e.code === 4001) {
+
+                    } else {
+                        that.network = false
+                        utils.put('network', false)
+                    }
                 }
             }
         },
@@ -237,6 +288,7 @@ export default {
                 const that = this
                 window.ethereum.on('accountsChanged', function(res) {
                     that.fromAddress = res[0]
+                    that.init()
                 })
             }
         },
@@ -247,38 +299,91 @@ export default {
                 window.ethereum.on('chainChanged', function(val) {
                     const chainId = Web3.utils.numberToHex(that.chainId)
                     if (val !== chainId) {
-                        console.log('链id:' + Web3.utils.hexToNumber(val))
                         that.network = false
+                        utils.put('network', false)
                     } else {
                         that.network = true
-                        console.log('网络切换正确！')
+                        utils.put('network', true)
+                        that.init()
                     }
                 })
             }
         },
-        // 获取钱包余额
-        async getBalance() {
-            const web3 = new Web3(window.ethereum)
-            const fromAddress = await web3.eth.getAccounts()
-            // console.log(web3.currentProvider)
-            web3.eth.getBalance(fromAddress[0], (err, res) => {
-                if (!err) {
-                    console.log('余额：' + res / Math.pow(10, 18))
-                }
-            })
+        // 保留5位小数
+        getShowBalance(val) {
+            const balance = Math.round(val * Math.pow(10, 5)) / Math.pow(10, 5)
+            return balance
         },
+        // 获取代币余额
+        async getTokenBalance(address, decimals) {
+            const web3 = new Web3(window.ethereum)
+            const contractAddress = address
+            const fromAddress = await web3.eth.getAccounts()
+            const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+            const balance = await ethContract.methods.balanceOf(fromAddress[0]).call()
+            const balanceVal = balance / Math.pow(10, decimals)
+            return balanceVal
+        },
+        // 获取所有代币余额
+        async getAllBalance() {
+            if (window.ethereum) {
+                const web3 = new Web3(window.ethereum)
+                if (this.fromAddress) {
+                    const netId = await web3.eth.getChainId()
+                    if (this.chainId === netId) {
+                        for (const i of this.allToken) {
+                            if (i.name === 'MATIC') { // 原生币通过钱包获取余额
+                                web3.eth.getBalance(this.fromAddress, (err, res) => {
+                                    if (!err) {
+                                        const balance = res / Math.pow(10, 18)
+                                        i.balance = balance
+                                    }
+                                })
+                            } else {
+                                if (i.address) {
+                                    i.balance = await this.getTokenBalance(i.address, i.decimals)
+                                } else {
+                                    i.balance = 0
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        // 初始化
         async init() {
-            // 获取账户信息
             if (window.ethereum) {
                 const web3 = new Web3(window.ethereum)
                 const fromAddress = await web3.eth.getAccounts()
                 this.fromAddress = fromAddress[0]
-                // this.connectWeb3()
+                if (this.fromAddress) {
+                    const netId = await web3.eth.getChainId()
+                    if (this.chainId === netId) {
+                        this.network = true
+                        utils.put('network', true)
+                        // 获取余额
+                        await this.getAllBalance()
+                        const a = this.token1
+                        const b = this.token2
+                        for (const i of this.allToken) {
+                            if (i.name === a) {
+                                this.balance1 = this.getShowBalance(i.balance)
+                            } else if (i.name === b) {
+                                this.balance2 = this.getShowBalance(i.balance)
+                            }
+                        }
+                    } else {
+                        this.network = false
+                        utils.put('network', false)
+                    }
+                }
             } else {
                 console.log('请安装MetaMask钱包')
             }
         }
     },
+
     mounted () {
         this.init()
         this.onChangeAccount()
@@ -367,7 +472,13 @@ export default {
                 }
                 .tokenImg{
                     width: 54px;
+                    height: 54px;
+                    border-radius: 50%;
                     margin-right: 20px;
+                    img{
+                        width: 100%;
+                        height: 100%;
+                    }
                 }
             }
             .tokenNum{
@@ -388,9 +499,13 @@ export default {
                     font-weight: 500;
                     .numVal{
                         margin-top: 4px;
+                        text-align: right;
                         .balanceVal{
                             margin-left: 6px;
                         }
+                    }
+                    .numTip{
+                        text-align: right;
                     }
                 }
             }
@@ -518,6 +633,12 @@ export default {
                     align-items: center;
                     .tokenImg{
                         width: 54px;
+                        height: 54px;
+                        border-radius: 50%;
+                        img{
+                            width: 100%;
+                            height: 100%;
+                        }
                     }
                     .tokenName{
                         margin-left: 30px;
@@ -564,6 +685,7 @@ export default {
             text-align: left;
             line-height: 29px;
             padding:0 10px;
+            word-break: break-word;
         }
         .confirmBtn{
             height: 70px;

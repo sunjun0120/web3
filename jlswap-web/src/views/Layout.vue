@@ -37,7 +37,7 @@
                 </div>
                 <div class="right">
                     <div class="all money">TVL<span class="moneyNum">{{all}}</span></div>
-                    <div class="money">JML<span  class="moneyNum">{{surplus}}</span></div>
+                    <div class="money">JLS<span  class="moneyNum">{{surplus}}</span></div>
                     <div class="connectWallet" @click="connect" v-if="!fromAddress">Connect Wallet</div>
                     <div v-else>
                         <div class='userAddress' v-if="network">{{showFrom(fromAddress)}}</div>
@@ -85,7 +85,7 @@ export default {
             surplus: '$0.00',
             network: utils.load('network'),
             fromAddress: '',
-            chainId: 80001 // Mumbai
+            chainId: 137 // Polygon Mainnet
         }
     },
     methods: {
@@ -116,8 +116,34 @@ export default {
                     utils.put('network', true)
                 } catch (e) {
                     console.log(e.code)
-                    that.network = false
-                    utils.put('network', false)
+                    if (e.code === 4902) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [
+                                    {
+                                        chainId: Web3.utils.numberToHex(that.chainId),
+                                        chainName: 'Polygon',
+                                        nativeCurrency: {
+                                            name: 'matic',
+                                            symbol: 'MATIC',
+                                            decimals: 18
+                                        },
+                                        rpcUrls: ['https://polygon.llamarpc.com'],
+                                        blockExplorerUrls: ['https://polygonscan.com']
+                                    }
+                                ]
+                            })
+                            that.network = true
+                            utils.put('network', true)
+                        } catch (error) {
+                        }
+                    } else if (e.code === 4001) {
+
+                    } else {
+                        that.network = false
+                        utils.put('network', false)
+                    }
                 }
             }
         },
@@ -173,7 +199,12 @@ export default {
                 const web3 = new Web3(window.ethereum)
                 const fromAddress = await web3.eth.getAccounts()
                 this.fromAddress = fromAddress[0]
-                this.connectWeb3()
+                const netId = await web3.eth.getChainId()
+                if (this.chainId === netId) {
+                    this.network = true
+                } else {
+                    this.network = false
+                }
             } else {
                 console.log('请安装MetaMask钱包')
             }

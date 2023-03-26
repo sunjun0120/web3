@@ -12,44 +12,61 @@
                         <div class="img"><img :src="i.icon" alt=""></div>
                         <div class="name">{{i.name}}</div>
                     </div>
-                    <div class="right">0.043</div>
+                    <div class="right">{{getShowBalance(i.balance)}}</div>
                 </div>
             </div>
         </el-dialog>
     </div>
 </template>
 <script>
-import { tokenList } from '../../constants/tokens'
 export default {
     name: '',
     data () {
         return {
             tokenListShow: false,
-            tableData: tokenList
+            tableData: [],
+            switchToken: 1
         }
     },
     methods: {
-        show1(token1) {
+        show1(token1, token2, val) {
+            this.tableData = val
             for (const i in this.tableData) {
-                if (this.tableData[i].name === token1) {
+                if (this.tableData[i].name === token1 || this.tableData[i].name === token2) {
                     this.tableData[i].disable = true
+                } else {
+                    this.tableData[i].disable = false
                 }
             }
+            this.switchToken = 1
             this.tokenListShow = true
         },
-        show2(token1, token2) {
+        show2(token1, token2, val) {
+            this.tableData = val
             for (const i in this.tableData) {
-                if (this.tableData[i].name === token1) {
+                if (this.tableData[i].name === token1 || this.tableData[i].name === token2) {
                     this.tableData[i].disable = true
-                }
-                if (this.tableData[i].name === token2) {
-                    this.tableData[i].disable = true
+                } else {
+                    this.tableData[i].disable = false
                 }
             }
+            this.switchToken = 2
             this.tokenListShow = true
+        },
+        getShowBalance(val) {
+            const balance = Math.round(val * Math.pow(10, 5)) / Math.pow(10, 5)
+            return balance
         },
         changeToken(item) {
-
+            if (!item.disable) {
+                if (this.switchToken === 1) {
+                    this.$emit('changeToken1', item)
+                    this.tokenListShow = false
+                } else {
+                    this.$emit('changeToken2', item)
+                    this.tokenListShow = false
+                }
+            }
         }
     }
 }
