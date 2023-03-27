@@ -10,41 +10,43 @@
             <div class='userState' v-if='fromAddress'>
                 <div  v-if='network'>
                     <div class='poolList'>
-                        <div class='poolItem' v-for='i,index in 4' :key='index'>
-                            <div class='top'>
-                                <div class='left'>
-                                    <div class='img'><img :src="getImg('USDC')" alt=""></div>
-                                    <div class='img'><img :src="getImg('USDT')" alt=""></div>
-                                    <div class='tokens'>USDC / USDT</div>
+                        <div v-for='i,index in allLp' :key='index'>
+                            <div class='poolItem' v-if='i.show'>
+                                <div class='top'>
+                                    <div class='left'>
+                                        <div class='img'><img :src="getImg(i.from)" alt=""></div>
+                                        <div class='img'><img :src="getImg(i.to)" alt=""></div>
+                                        <div class='tokens'>{{i.from}} / {{i.to}}</div>
+                                    </div>
+                                    <div :class="i.close?'right':'right arrowUp'" @click='openOrClose(index)'>manage</div>
                                 </div>
-                                <div class='right'>manage</div>
-                            </div>
-                            <div class='infoDiv'>
-                                <div class='info'>
-                                    <div class='infoItem'>
-                                        <div class='infoLeft'>Total Tokens in Liquidity Pool：</div>
-                                        <div class='infoRight'>0.00000006134</div>
+                                <div class='infoDiv' v-show='!i.close'>
+                                    <div class='info'>
+                                        <div class='infoItem'>
+                                            <div class='infoLeft'>Total Tokens in Liquidity Pool：</div>
+                                            <div class='infoRight'>0.00000006134</div>
+                                        </div>
+                                        <div class='infoItem'>
+                                            <div class='infoLeft'>Tokens in the reward pool：</div>
+                                            <div class='infoRight'>0</div>
+                                        </div>
+                                        <div class='infoItem'>
+                                            <div class='infoLeft'>Pool {{i.from}}：</div>
+                                            <div class='infoRight'>0.039</div>
+                                        </div>
+                                        <div class='infoItem'>
+                                            <div class='infoLeft'>To pool {{i.to}}： </div>
+                                            <div class='infoRight'>0.1036</div>
+                                        </div>
+                                        <div class='infoItem'>
+                                            <div class='infoLeft'>Your proportion in the Liquidity Pool： </div>
+                                            <div class='infoRight'>&lt;0.01%</div>
+                                        </div>
                                     </div>
-                                    <div class='infoItem'>
-                                        <div class='infoLeft'>Tokens in the reward pool：</div>
-                                        <div class='infoRight'>0</div>
+                                    <div class='options'>
+                                        <div class='optBtn add'>Add to</div>
+                                        <div class='optBtn remove'>Remove</div>
                                     </div>
-                                    <div class='infoItem'>
-                                        <div class='infoLeft'>Pool USDC：</div>
-                                        <div class='infoRight'>0.039</div>
-                                    </div>
-                                    <div class='infoItem'>
-                                        <div class='infoLeft'>To pool GLMR： </div>
-                                        <div class='infoRight'>0.1036</div>
-                                    </div>
-                                    <div class='infoItem'>
-                                        <div class='infoLeft'>Your proportion in the Liquidity Pool： </div>
-                                        <div class='infoRight'>&lt;0.01%</div>
-                                    </div>
-                                </div>
-                                <div class='options'>
-                                    <div class='optBtn add'>Add to</div>
-                                    <div class='optBtn remove'>Remove</div>
                                 </div>
                             </div>
                         </div>
@@ -67,6 +69,8 @@
 import utils from '../utils/storage'
 import Web3 from 'web3'
 import { tokenList } from '../constants/tokens'
+import { lpList } from '../constants/lpList'
+import { pairAbi } from '../constants/abi/pairAbi'
 export default {
     name: '',
     data () {
@@ -74,6 +78,7 @@ export default {
             fromAddress: '',
             network: utils.load('network'),
             allToken: tokenList,
+            allLp: lpList,
             chainId: 137
         }
     },
@@ -82,6 +87,27 @@ export default {
             for (const i in this.allToken) {
                 if (this.allToken[i].name === val) {
                     return this.allToken[i].icon
+                }
+            }
+        },
+        async initList() {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allLp) {
+                this.$set(this.allLp[i], 'close', true)
+                const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+                const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+                console.log(lpBalance)
+                if (lpBalance > 0) {
+                    this.$set(this.allLp[i], 'show', true)
+                } else {
+                    this.$set(this.allLp[i], 'show', false)
+                }
+            }
+        },
+        openOrClose(index) {
+            for (const i in this.allLp) {
+                if (Number(i) === index) {
+                    this.allLp[i].close = !this.allLp[i].close
                 }
             }
         },
@@ -180,6 +206,7 @@ export default {
                     if (this.chainId === netId) {
                         this.network = true
                         utils.put('network', true)
+                        this.initList()
                     } else {
                         this.network = false
                         utils.put('network', false)
@@ -301,6 +328,22 @@ export default {
                         font-size: 20px;
                         color:#fff;
                         cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                    }
+                    .right::after{
+                        display: block;
+                        content:'';
+                        width: 18px;
+                        height: 18px;
+                        background: url('../assets/arrowDown.png') no-repeat;
+                        background-size: 100% 100%;
+                        margin-left: 10px;
+                        margin-right: 15px;
+                        transition: all 0.3s;
+                    }
+                    .arrowUp::after{
+                        transform: rotate(180deg);
                     }
                 }
             }

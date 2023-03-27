@@ -135,7 +135,7 @@ import ConfirmSuccess from '../components/swap/success.vue'
 import ConfirmFail from '../components/swap/fail.vue'
 import ChangeToken from '../components/swap/changeToken.vue'
 import { tokenList } from '../constants/tokens'
-import { ERC20 } from '../constants/ERC20'
+import { ERC20 } from '../constants/abi/ERC20'
 export default {
     name: '',
     components: {
@@ -348,6 +348,10 @@ export default {
                             }
                         }
                     }
+                } else {
+                    for (const i of this.allToken) {
+                        i.balance = 0
+                    }
                 }
             }
         },
@@ -377,6 +381,9 @@ export default {
                         this.network = false
                         utils.put('network', false)
                     }
+                } else {
+                    this.balance1 = 0
+                    this.balance2 = 0
                 }
             } else {
                 console.log('请安装MetaMask钱包')
