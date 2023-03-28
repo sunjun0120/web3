@@ -2,6 +2,7 @@ import USDC from '../assets/USDC.webp'
 import USDT from '../assets/USDT.webp'
 import JLS from '../assets/JLS.png'
 import MATIC from '../assets/MATIC.png'
+import WMATIC from '../assets/WMATIC.jpeg'
 export const tokenList = [
     {
         name: 'MATIC',
@@ -11,7 +12,7 @@ export const tokenList = [
     },
     {
         name: 'WMATIC',
-        icon: MATIC,
+        icon: WMATIC,
         address: '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270',
         decimals: 18
     },
@@ -35,7 +36,7 @@ export const tokenList = [
     //     decimals: 18
     // },
     {
-        name: 'JLST',
+        name: 'JLS',
         desc: 'test JLST',
         icon: JLS,
         address: '0x93e0c6f2387af2bb367bcef22643532976e4660c',

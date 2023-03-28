@@ -1,6 +1,6 @@
 <template>
     <div class="jlswap-pool">
-        <div class='poolList-container'>
+        <div class='poolList-container' v-show="!showAdd">
             <div class="title">
                 <div class="tip">Standard AMM </div>
                 <el-tooltip popper-class='standardTip' :visible-arrow='false' effect="dark" content="Standard AMM：Liquidity providers earn 0.25% fee whenever a trade is made on JmlSwap proportional to their share of the pool. Fees are added to the pool and can be claimed anytime by withdrawing your liquidity" placement="right">
@@ -11,7 +11,7 @@
                 <div  v-if='network'>
                     <div class='poolList'>
                         <div v-for='i,index in allLp' :key='index'>
-                            <div class='poolItem' v-if='i.show'>
+                            <div class='poolItem' v-if="i.show">
                                 <div class='top'>
                                     <div class='left'>
                                         <div class='img'><img :src="getImg(i.from)" alt=""></div>
@@ -23,20 +23,12 @@
                                 <div class='infoDiv' v-show='!i.close'>
                                     <div class='info'>
                                         <div class='infoItem'>
-                                            <div class='infoLeft'>Total Tokens in Liquidity Pool：</div>
-                                            <div class='infoRight'>0.00000006134</div>
-                                        </div>
-                                        <div class='infoItem'>
-                                            <div class='infoLeft'>Tokens in the reward pool：</div>
-                                            <div class='infoRight'>0</div>
-                                        </div>
-                                        <div class='infoItem'>
                                             <div class='infoLeft'>Pool {{i.from}}：</div>
-                                            <div class='infoRight'>0.039</div>
+                                            <div class='infoRight'>{{ getBalance(i.from) }}</div>
                                         </div>
                                         <div class='infoItem'>
                                             <div class='infoLeft'>To pool {{i.to}}： </div>
-                                            <div class='infoRight'>0.1036</div>
+                                            <div class='infoRight'>{{ getBalance(i.to) }}</div>
                                         </div>
                                         <div class='infoItem'>
                                             <div class='infoLeft'>Your proportion in the Liquidity Pool： </div>
@@ -52,7 +44,7 @@
                         </div>
                     </div>
                     <div class='addDiv'>
-                        <div class='add'>Add</div>
+                        <div class='add' @click="addPool">Add</div>
                         <div class='import'>Import</div>
                     </div>
                 </div>
@@ -63,6 +55,7 @@
             </div>
 
         </div>
+        <pool-add v-show="showAdd"></pool-add>
     </div>
 </template>
 <script>
@@ -71,22 +64,83 @@ import Web3 from 'web3'
 import { tokenList } from '../constants/tokens'
 import { lpList } from '../constants/lpList'
 import { pairAbi } from '../constants/abi/pairAbi'
+import { ERC20 } from '../constants/abi/ERC20'
+import PoolAdd from '../components/pool/poolAdd.vue'
 export default {
     name: '',
+    components: {
+        PoolAdd
+    },
     data () {
         return {
             fromAddress: '',
             network: utils.load('network'),
             allToken: tokenList,
             allLp: lpList,
+            showAdd: false,
             chainId: 137
         }
     },
     methods: {
+        addPool() {
+            this.showAdd = true
+        },
         getImg(val) {
             for (const i in this.allToken) {
                 if (this.allToken[i].name === val) {
                     return this.allToken[i].icon
+                }
+            }
+        },
+        getBalance(val) {
+            for (const i in this.allToken) {
+                if (this.allToken[i].name === val) {
+                    return this.getShowBalance(this.allToken[i].balance)
+                }
+            }
+        },
+        // 保留5位小数
+        getShowBalance(val) {
+            const balance = Math.round(val * Math.pow(10, 5)) / Math.pow(10, 5)
+            return balance
+        },
+        // 获取代币余额
+        async getTokenBalance(address, decimals) {
+            const web3 = new Web3(window.ethereum)
+            const contractAddress = address
+            const fromAddress = await web3.eth.getAccounts()
+            const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+            const balance = await ethContract.methods.balanceOf(fromAddress[0]).call()
+            const balanceVal = balance / Math.pow(10, decimals)
+            return balanceVal
+        },
+        async getAllBalance() {
+            if (window.ethereum) {
+                const web3 = new Web3(window.ethereum)
+                if (this.fromAddress) {
+                    const netId = await web3.eth.getChainId()
+                    if (this.chainId === netId) {
+                        for (const i of this.allToken) {
+                            if (i.name === 'MATIC') { // 原生币通过钱包获取余额
+                                web3.eth.getBalance(this.fromAddress, (err, res) => {
+                                    if (!err) {
+                                        const balance = res / Math.pow(10, 18)
+                                        i.balance = balance
+                                    }
+                                })
+                            } else {
+                                if (i.address) {
+                                    i.balance = await this.getTokenBalance(i.address, i.decimals)
+                                } else {
+                                    i.balance = 0
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    for (const i of this.allToken) {
+                        i.balance = 0
+                    }
                 }
             }
         },
@@ -104,7 +158,8 @@ export default {
                 }
             }
         },
-        openOrClose(index) {
+        async openOrClose(index) {
+            await this.getAllBalance()
             for (const i in this.allLp) {
                 if (Number(i) === index) {
                     this.allLp[i].close = !this.allLp[i].close
@@ -174,6 +229,9 @@ export default {
                 const that = this
                 window.ethereum.on('accountsChanged', function(res) {
                     that.fromAddress = res[0]
+                    if (!that.fromAddress) {
+                        that.showAdd = false
+                    }
                     that.init()
                 })
             }
@@ -187,6 +245,7 @@ export default {
                     if (val !== chainId) {
                         that.network = false
                         utils.put('network', false)
+                        that.showAdd = false
                     } else {
                         that.network = true
                         utils.put('network', true)
@@ -257,7 +316,7 @@ export default {
             flex:1;
             .poolList{
                 min-height: 350px;
-                max-height: 480px;
+                max-height: 410px;
                 overflow-y: auto;
                 padding:30px 0 0;
                 box-sizing: border-box;
@@ -314,6 +373,7 @@ export default {
                             img{
                                 width: 100%;
                                 height: 100%;
+                                border-radius: 50%;
                             }
                         }
                         .tokens{

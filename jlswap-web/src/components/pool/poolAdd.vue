@@ -1,8 +1,8 @@
 <template>
-    <div class="jlswap-swap">
+    <div class="jlswap-poolAdd">
         <div class="swapContainer">
             <div class="title">
-                <div class="tip">Swap</div>
+                <div class="tip">Add liquidity</div>
                 <el-popover
                     placement="bottom-end"
                     :visible-arrow="false"
@@ -40,7 +40,7 @@
                     </div>
                 </div>
             </div>
-            <div :class="swapT?'swapIcon el-icon-bottom':'swapIcon el-icon-bottom rotate'" @click="swapToken"></div>
+            <div class='swapIcon el-icon-plus'></div>
             <div class="token-container">
                 <div class="token token1" @click="changeToken(2)">
                     <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
@@ -59,9 +59,8 @@
                     </div>
                 </div>
             </div>
-            <div class="connectWallet" @click="connect" v-if="!fromAddress">Connect Wallet</div>
-            <div class="showSwapBtn" v-else>
-                <div v-if="network">
+            <div class="showSwapBtn">
+                <div>
                     <div class="errorTip" v-if="showError">{{getMessage()}}</div>
                     <div class="approve" v-else>
                         <div class="exchangeInfo">
@@ -74,7 +73,6 @@
                         <div class="approveBtn" @click="confirm">approve</div>
                     </div>
                 </div>
-                <div class="connectWallet" v-else>Network Error</div>
             </div>
         </div>
         <el-dialog
@@ -121,41 +119,33 @@
                 <div class="confirmBtn" @click="sureConfirm">confirm exchange</div>
             </div>
         </el-dialog>
-        <confirm-wait ref="confirmWait"></confirm-wait>
-        <confirm-success ref="confirmSuccess"></confirm-success>
-        <confirm-fail ref="confirmFail"></confirm-fail>
         <change-token ref="changeToken" @changeToken1='changeToken1' @changeToken2='changeToken2'></change-token>
     </div>
 </template>
 <script>
 import Web3 from 'web3'
-import utils from '../utils/storage'
-import ConfirmWait from '../components/swap/waitDia.vue'
-import ConfirmSuccess from '../components/swap/success.vue'
-import ConfirmFail from '../components/swap/fail.vue'
-import ChangeToken from '../components/swap/changeToken.vue'
-import { tokenList } from '../constants/tokens'
-import { ERC20 } from '../constants/abi/ERC20'
+import ChangeToken from './changeToken.vue'
+import { tokenList } from '../../constants/tokens'
+import { ERC20 } from '../../constants/abi/ERC20'
+// import { routerAbi } from '../../constants/abi/routerAbi'
+import C from '../../constants/contractAddress'
 export default {
     name: '',
     components: {
-        ConfirmWait, ConfirmSuccess, ConfirmFail, ChangeToken
+        ChangeToken
     },
     data () {
         return {
-            token1: 'MATIC',
-            token2: 'JLS',
+            token1: 'USDC',
+            token2: 'USDT',
             balance1: 0,
             balance2: 0,
             tokenVal1: null,
             tokenVal2: null,
-            swapT: false,
             swapE: false,
             swapE2: false,
             showAuto: false,
-            showError: true,
             confirmExchange: false,
-            network: utils.load('network'),
             fromAddress: '',
             allToken: tokenList,
             settings: 0.5,
@@ -186,25 +176,77 @@ export default {
                 }
             }
         },
-        swapToken() {
-            this.swapT = !this.swapT
-            const a = this.token1
-            const b = this.token2
-            const c = this.balance1
-            const d = this.balance2
-            this.token1 = b
-            this.token2 = a
-            this.balance1 = d
-            this.balance2 = c
-        },
         changeScale() {
             this.swapE = !this.swapE
         },
         changeScale2() {
             this.swapE2 = !this.swapE2
         },
-        confirm() {
-            this.confirmExchange = true
+        async confirm() {
+            // 审批，查询当前用户的erc20代币对于router的授权数量
+            const web3 = new Web3(window.ethereum)
+            const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
+            // erc20+native
+            if (this.token1 === 'MATIC') {
+                let tokenAddress2
+                for (const i of this.allToken) {
+                    if (i.name === this.token2) {
+                        tokenAddress2 = i.address
+                    }
+                }
+                const tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
+                const routerAddress = C.router_address
+                // const router = new web3.eth.Contract(routerAbi, routerAddress)
+                const allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
+                if (Number(this.tokenVal2) > allowance2) {
+                    await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
+                }
+            } else if (this.token2 === 'MATIC') {
+                let tokenAddress1
+
+                for (const i of this.allToken) {
+                    if (i.name === this.token1) {
+                        tokenAddress1 = i.address
+                    }
+                }
+                const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
+                const routerAddress = C.router_address
+                // const router = new web3.eth.Contract(routerAbi, routerAddress)
+                const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
+                if (Number(this.tokenVal1) > allowance1) {
+                    await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
+                }
+            } else { // erc20+erc20
+                let tokenAddress1
+                let tokenAddress2
+                let decimals1
+                let decimals2
+                for (const i of this.allToken) {
+                    if (i.name === this.token1) {
+                        tokenAddress1 = i.address
+                        decimals1 = i.decimals
+                    }
+                    if (i.name === this.token2) {
+                        tokenAddress2 = i.address
+                        decimals2 = i.decimals
+                    }
+                }
+                const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
+                const tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
+                const routerAddress = C.router_address
+                const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
+                const allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
+                const getAllowance1 = allowance1 / Math.pow(10, decimals1)
+                const getAllowance2 = allowance2 / Math.pow(10, decimals2)
+                console.log(getAllowance1)
+                console.log(getAllowance2)
+                if (Number(this.tokenVal1) > getAllowance1) {
+                    await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
+                }
+                if (Number(this.tokenVal2) > getAllowance2) {
+                    await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
+                }
+            }
         },
         sureConfirm() {
             this.confirmExchange = false
@@ -217,96 +259,16 @@ export default {
             this.showAuto = true
         },
         getMessage() {
-            if (!this.tokenVal1 || Number(this.tokenVal1) === 0) {
+            if (!this.tokenVal1 || Number(this.tokenVal1) === 0 || !this.tokenVal2 || Number(this.tokenVal2) === 0) {
                 return 'Enter the amount'
             } else {
                 if (this.tokenVal1 > this.balance1) {
                     return 'Insufficient balance of token ' + this.token1
-                }
-            }
-        },
-        connect() {
-            if (window.ethereum) {
-                window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
-                    this.fromAddress = res[0]
-                    this.connectWeb3()
-                })
-            } else {
-                // 唤起失败，跳转metaMask
-                window.open('https://metamask.io/')
-            }
-        },
-        // 连接web3,切换节点
-        async connectWeb3() {
-            if (window.ethereum) {
-                const that = this
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{
-                            chainId: Web3.utils.numberToHex(that.chainId) // 目标链ID
-                        }]
-                    })
-                    that.network = true
-                    utils.put('network', true)
-                } catch (e) {
-                    console.log(e.code)
-                    if (e.code === 4902) {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [
-                                    {
-                                        chainId: Web3.utils.numberToHex(that.chainId),
-                                        chainName: 'Polygon',
-                                        nativeCurrency: {
-                                            name: 'matic',
-                                            symbol: 'MATIC',
-                                            decimals: 18
-                                        },
-                                        rpcUrls: ['https://polygon.llamarpc.com'],
-                                        blockExplorerUrls: ['https://polygonscan.com']
-                                    }
-                                ]
-                            })
-                            that.network = true
-                            utils.put('network', true)
-                        } catch (error) {
-                        }
-                    } else if (e.code === 4001) {
-
-                    } else {
-                        that.network = false
-                        utils.put('network', false)
+                } else {
+                    if (this.tokenVal2 > this.balance2) {
+                        return 'Insufficient balance of token ' + this.token2
                     }
                 }
-            }
-        },
-        // 监听账户切换
-        onChangeAccount() {
-            if (window.ethereum) {
-                const that = this
-                window.ethereum.on('accountsChanged', function(res) {
-                    that.fromAddress = res[0]
-                    that.init()
-                })
-            }
-        },
-        // 监听链是否正确
-        onChangeChain() {
-            if (window.ethereum) {
-                const that = this
-                window.ethereum.on('chainChanged', function(val) {
-                    const chainId = Web3.utils.numberToHex(that.chainId)
-                    if (val !== chainId) {
-                        that.network = false
-                        utils.put('network', false)
-                    } else {
-                        that.network = true
-                        utils.put('network', true)
-                        that.init()
-                    }
-                })
             }
         },
         // 保留5位小数
@@ -329,22 +291,19 @@ export default {
             if (window.ethereum) {
                 const web3 = new Web3(window.ethereum)
                 if (this.fromAddress) {
-                    const netId = await web3.eth.getChainId()
-                    if (this.chainId === netId) {
-                        for (const i of this.allToken) {
-                            if (i.name === 'MATIC') { // 原生币通过钱包获取余额
-                                web3.eth.getBalance(this.fromAddress, (err, res) => {
-                                    if (!err) {
-                                        const balance = res / Math.pow(10, 18)
-                                        i.balance = balance
-                                    }
-                                })
-                            } else {
-                                if (i.address) {
-                                    i.balance = await this.getTokenBalance(i.address, i.decimals)
-                                } else {
-                                    i.balance = 0
+                    for (const i of this.allToken) {
+                        if (i.name === 'MATIC') { // 原生币通过钱包获取余额
+                            web3.eth.getBalance(this.fromAddress, (err, res) => {
+                                if (!err) {
+                                    const balance = res / Math.pow(10, 18)
+                                    i.balance = balance
                                 }
+                            })
+                        } else {
+                            if (i.address) {
+                                i.balance = await this.getTokenBalance(i.address, i.decimals)
+                            } else {
+                                i.balance = 0
                             }
                         }
                     }
@@ -362,24 +321,16 @@ export default {
                 const fromAddress = await web3.eth.getAccounts()
                 this.fromAddress = fromAddress[0]
                 if (this.fromAddress) {
-                    const netId = await web3.eth.getChainId()
-                    if (this.chainId === netId) {
-                        this.network = true
-                        utils.put('network', true)
-                        // 获取余额
-                        await this.getAllBalance()
-                        const a = this.token1
-                        const b = this.token2
-                        for (const i of this.allToken) {
-                            if (i.name === a) {
-                                this.balance1 = this.getShowBalance(i.balance)
-                            } else if (i.name === b) {
-                                this.balance2 = this.getShowBalance(i.balance)
-                            }
+                    // 获取余额
+                    await this.getAllBalance()
+                    const a = this.token1
+                    const b = this.token2
+                    for (const i of this.allToken) {
+                        if (i.name === a) {
+                            this.balance1 = this.getShowBalance(i.balance)
+                        } else if (i.name === b) {
+                            this.balance2 = this.getShowBalance(i.balance)
                         }
-                    } else {
-                        this.network = false
-                        utils.put('network', false)
                     }
                 } else {
                     this.balance1 = 0
@@ -390,30 +341,29 @@ export default {
             }
         }
     },
-
+    computed: {
+        showError() {
+            if (this.tokenVal1 && Number(this.tokenVal1) !== 0 && (this.tokenVal1 <= this.balance1) && this.tokenVal2 && Number(this.tokenVal2) !== 0 && (this.tokenVal2 <= this.balance2)) {
+                return false
+            } else {
+                return true
+            }
+        }
+    },
     mounted () {
         this.init()
-        this.onChangeAccount()
-        this.onChangeChain()
     },
     watch: {
         settings(newV, oldV) {
             if (newV !== 0.1) {
                 this.showAuto = false
             }
-        },
-        tokenVal1(newV, oldV) {
-            if (newV && Number(newV) !== 0 && (newV <= this.balance1)) {
-                this.showError = false
-            } else {
-                this.showError = true
-            }
         }
     }
 }
 </script>
 <style lang="less" scoped>
-.jlswap-swap{
+.jlswap-poolAdd{
     // height: 100%;
     display: flex;
     align-items: center;
@@ -589,7 +539,7 @@ export default {
 }
 </style>
 <style lang="less">
-.jlswap-swap{
+.jlswap-poolAdd{
     .tokenVal{
         .el-input__inner{
             background-color:transparent;

@@ -32,10 +32,30 @@ export default {
         show1(token1, token2, val) {
             this.tableData = val
             for (const i in this.tableData) {
-                if (this.tableData[i].name === token1 || this.tableData[i].name === token2) {
-                    this.tableData[i].disable = true
-                } else {
-                    this.tableData[i].disable = false
+                if (token2 === 'USDT') {
+                    if (this.tableData[i].name === 'USDC') {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
+                } else if (token2 === 'USDC') {
+                    if (this.tableData[i].name === 'USDC') {
+                        this.tableData[i].disable = true
+                    } else {
+                        this.tableData[i].disable = false
+                    }
+                } else if (token2 === 'WMATIC') {
+                    if (this.tableData[i].name === 'USDC' || this.tableData[i].name === 'JLS') {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
+                } else if (token2 === 'JLS') {
+                    if (this.tableData[i].name === 'USDC' || this.tableData[i].name === 'WMATIC') {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
                 }
             }
             this.switchToken = 1
@@ -44,10 +64,30 @@ export default {
         show2(token1, token2, val) {
             this.tableData = val
             for (const i in this.tableData) {
-                if (this.tableData[i].name === token1 || this.tableData[i].name === token2) {
-                    this.tableData[i].disable = true
-                } else {
-                    this.tableData[i].disable = false
+                if (token1 === 'USDT') {
+                    if (this.tableData[i].name === 'USDC') {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
+                } else if (token1 === 'USDC') {
+                    if (this.tableData[i].name === 'USDC') {
+                        this.tableData[i].disable = true
+                    } else {
+                        this.tableData[i].disable = false
+                    }
+                } else if (token1 === 'WMATIC') {
+                    if (this.tableData[i].name === 'USDC' || this.tableData[i].name === 'JLS') {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
+                } else if (token1 === 'JLS') {
+                    if (this.tableData[i].name === 'USDC' || this.tableData[i].name === 'WMATIC') {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
                 }
             }
             this.switchToken = 2
