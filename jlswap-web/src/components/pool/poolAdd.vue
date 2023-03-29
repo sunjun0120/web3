@@ -66,7 +66,7 @@
                         <div class="exchangeInfo">
                             <div class="exchangeTip">exchange ratio</div>
                             <div class="exchangeContent">
-                                <div class="scale">1 USDC = 2.49 GLMR</div>
+                                <div class="scale">{{getScaleTip(swapE)}}</div>
                                 <div :class="swapE?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale"></div>
                             </div>
                         </div>
@@ -101,7 +101,7 @@
                 <div class="confirmTip">
                     <div class="left">exchange ratio</div>
                     <div class="right">
-                        <div class="scale">1 USDC = 2.49 GLMR</div>
+                        <div class="scale">{{getScaleTip(swapE2)}}</div>
                         <div :class="swapE2?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale2"></div>
                     </div>
                 </div>
@@ -126,8 +126,10 @@
 import Web3 from 'web3'
 import ChangeToken from './changeToken.vue'
 import { tokenList } from '../../constants/tokens'
+import { lpList } from '../../constants/lpList'
 import { ERC20 } from '../../constants/abi/ERC20'
 import { routerAbi } from '../../constants/abi/routerAbi'
+import { pairAbi } from '../../constants/abi/pairAbi'
 import C from '../../constants/contractAddress'
 export default {
     name: '',
@@ -137,7 +139,7 @@ export default {
     data () {
         return {
             token1: 'USDC',
-            token2: 'USDT',
+            token2: '',
             balance1: 0,
             balance2: 0,
             tokenVal1: null,
@@ -145,9 +147,11 @@ export default {
             swapE: false,
             swapE2: false,
             showAuto: false,
+            // showError: true,
             confirmExchange: false,
             fromAddress: '',
             allToken: tokenList,
+            allLp: lpList,
             settings: 0.5,
             chainId: 137
         }
@@ -241,19 +245,17 @@ export default {
                 const routerAddress = C.router_address
                 const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
                 const allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
-                // const getAllowance1 = allowance1 / Math.pow(10, decimals1)
-                // const getAllowance2 = allowance2 / Math.pow(10, decimals2)
                 let getAllowance1
                 let getAllowance2
                 if (decimals1 === 18) {
-                    getAllowance1 = web3.utils.toWei(this.tokenVal1, 'ether')
+                    getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
                 } else {
-                    getAllowance1 = web3.utils.toWei(this.tokenVal1, 'lovelace')
+                    getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
                 }
                 if (decimals2 === 18) {
-                    getAllowance2 = web3.utils.toWei(this.tokenVal2, 'ether')
+                    getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'ether')
                 } else {
-                    getAllowance2 = web3.utils.toWei(this.tokenVal2, 'lovelace')
+                    getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
                 }
                 if (Number(getAllowance1) > Number(allowance1)) {
                     await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
@@ -262,21 +264,19 @@ export default {
                     await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
                 const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
-                const amountAMin = web3.utils.toWei(((1 - Number(this.settings) / 100) * Number(getAllowance1)).toString(), 'wei')
-                const amountBMin = web3.utils.toWei(((1 - Number(this.settings) / 100) * Number(getAllowance2)).toString(), 'wei')
+                const amountAMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance1))).toString(), 'wei')
+                const amountBMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance2))).toString(), 'wei')
                 const deadline = Math.floor(Date.now() / 1000) + 60 * 60// 1小时后过期
 
-                const tx = await routerContract.methods.addLiquidity(tokenAddress1, tokenAddress2, getAllowance1, getAllowance2, amountAMin, amountBMin, routerAddress, deadline)
-                const gas = await tx.estimateGas({ from: routerAddress })
-                console.log(gas)
-                // const signedTx = await web3.eth.accounts.signTransaction({
-                //     to: routerAddress,
-                //     data: tx.encodeABI(),
-                //     gas: await tx.estimateGas({ from: this.fromAddress }),
-                //     gasPrice: await web3.eth.getGasPrice(),
-                //     nonce: await web3.eth.getTransactionCount(this.fromAddress, 'pending')
-                // })
-                // console.log(tx.estimateGas({ from: this.fromAddress }))
+                const tx = await routerContract.methods.addLiquidity(tokenAddress1, tokenAddress2, getAllowance1, getAllowance2, amountAMin, amountBMin, this.fromAddress, deadline)
+                const signedTx = await web3.eth.sendTransaction({
+                    from: this.fromAddress,
+                    to: routerAddress,
+                    data: tx.encodeABI(),
+                    gas: await tx.estimateGas({ from: this.fromAddress }),
+                    gasPrice: await web3.eth.getGasPrice()
+                })
+                console.log(signedTx)
                 // const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction)
                 // console.log(receipt)
             }
@@ -347,6 +347,92 @@ export default {
                 }
             }
         },
+        getScaleTip(val) {
+            if (!val) {
+                const token1Scale = this.getScale(this.token1)
+                const token2Scale = this.getScale(this.token2)
+                const showScale = token2Scale / token1Scale
+                return '1 ' + this.token1 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token2
+            } else {
+                const token1Scale = this.getScale(this.token1)
+                const token2Scale = this.getScale(this.token2)
+                const showScale = token1Scale / token2Scale
+                return '1 ' + this.token2 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token1
+            }
+        },
+        // 获取兑换比例
+        async getTokenScale() {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allLp) {
+                const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+                const reserves = await scaleContract.methods.getReserves().call()
+                const token0 = await scaleContract.methods.token0().call()
+                const token1 = await scaleContract.methods.token1().call()
+                const decimals0 = this.getTokenDecimals(token0)
+                const decimals1 = this.getTokenDecimals(token1)
+                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                const exchangeRate = token1Balance / token0Balance
+                this.allLp[i].scale = exchangeRate
+                const name0 = this.getTokenName(token0)
+                const name1 = this.getTokenName(token1)
+                this.getBaseVal(name0, name1, exchangeRate)
+            }
+        },
+        getBaseVal(name0, name1, scale) {
+            for (const i of this.allToken) {
+                if (i.name === 'USDC') {
+                    i.baseVal = 1
+                }
+                if (name0 === 'USDC') {
+                    if (i.name === name1) {
+                        i.baseVal = scale
+                    }
+                }
+                if (name0 === 'WMATIC' && name1 === 'USDC') {
+                    if (i.name === name0) {
+                        i.baseVal = 1 / scale
+                    }
+                    if (i.name === 'MATIC') {
+                        i.baseVal = 1 / scale
+                    }
+                }
+            }
+        },
+        getTokenName(val) {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allToken) {
+                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
+                    return this.allToken[i].name
+                }
+            }
+        },
+        getTokenDecimals(val) {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allToken) {
+                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
+                    return this.allToken[i].decimals
+                }
+            }
+        },
+        getScale(token) {
+            for (const i of this.allToken) {
+                if (i.name === token) {
+                    return i.baseVal
+                }
+            }
+        },
+        getOtherCount(index, val) {
+            const token1Scale = this.getScale(this.token1)
+            const token2Scale = this.getScale(this.token2)
+            if (index === 1) {
+                const tokenVal = Number(val) * (token2Scale / token1Scale)
+                return this.getShowBalance(tokenVal)
+            } else if (index === 2) {
+                const tokenVal = Number(val) * (token1Scale / token2Scale)
+                return this.getShowBalance(tokenVal)
+            }
+        },
         // 初始化
         async init() {
             if (window.ethereum) {
@@ -356,6 +442,8 @@ export default {
                 if (this.fromAddress) {
                     // 获取余额
                     await this.getAllBalance()
+                    // 获取兑换比例
+                    this.getTokenScale()
                     const a = this.token1
                     const b = this.token2
                     for (const i of this.allToken) {
@@ -390,6 +478,20 @@ export default {
         settings(newV, oldV) {
             if (newV !== 0.1) {
                 this.showAuto = false
+            }
+        },
+        tokenVal1(newV, oldV) {
+            if (newV && Number(newV) !== 0 && (newV <= this.balance1)) {
+                this.tokenVal2 = this.getOtherCount(1, newV)
+            } else {
+                this.tokenVal2 = null
+            }
+        },
+        tokenVal2(newV, oldV) {
+            if (newV && Number(newV) !== 0) {
+                this.tokenVal1 = this.getOtherCount(2, newV)
+            } else {
+                this.tokenVal1 = null
             }
         }
     }

@@ -56,6 +56,8 @@ export default {
                     } else {
                         this.tableData[i].disable = true
                     }
+                } else {
+                    this.tableData[i].disable = false
                 }
             }
             this.switchToken = 1
