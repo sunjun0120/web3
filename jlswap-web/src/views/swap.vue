@@ -135,7 +135,9 @@ import ConfirmSuccess from '../components/swap/success.vue'
 import ConfirmFail from '../components/swap/fail.vue'
 import ChangeToken from '../components/swap/changeToken.vue'
 import { tokenList } from '../constants/tokens'
+import { lpList } from '../constants/lpList'
 import { ERC20 } from '../constants/abi/ERC20'
+import { pairAbi } from '../constants/abi/pairAbi'
 export default {
     name: '',
     components: {
@@ -158,6 +160,7 @@ export default {
             network: utils.load('network'),
             fromAddress: '',
             allToken: tokenList,
+            allLp: lpList,
             settings: 0.5,
             chainId: 137
         }
@@ -355,6 +358,66 @@ export default {
                 }
             }
         },
+        // 获取兑换比例
+        async getTokenScale() {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allLp) {
+                const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+                const reserves = await scaleContract.methods.getReserves().call()
+                const token0 = await scaleContract.methods.token0().call()
+                const token1 = await scaleContract.methods.token1().call()
+                const decimals0 = this.getTokenDecimals(token0)
+                const decimals1 = this.getTokenDecimals(token1)
+                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                const exchangeRate = token1Balance / token0Balance
+                this.allLp[i].scale = exchangeRate
+                const name0 = this.getTokenName(token0)
+                const name1 = this.getTokenName(token1)
+                this.getBaseVal(name0, name1, exchangeRate)
+            }
+        },
+        getBaseVal(name0, name1, scale) {
+            for (const i of this.allToken) {
+                if (i.name === 'USDC') {
+                    i.baseVal = 1
+                }
+                if (name0 === 'USDC' && name1 === 'USDT') {
+                    if (i.name === name1) {
+                        i.baseVal = scale
+                    }
+                }
+                if (name0 === 'USDC' && name1 === 'JLS') {
+                    if (i.name === name1) {
+                        i.baseVal = scale
+                    }
+                }
+                if (name0 === 'WMATIC' && name1 === 'USDC') {
+                    if (i.name === name0) {
+                        i.baseVal = 1 / scale
+                    }
+                    if (i.name === 'MATIC') {
+                        i.baseVal = 1 / scale
+                    }
+                }
+            }
+        },
+        getTokenName(val) {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allToken) {
+                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
+                    return this.allToken[i].name
+                }
+            }
+        },
+        getTokenDecimals(val) {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allToken) {
+                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
+                    return this.allToken[i].decimals
+                }
+            }
+        },
         // 初始化
         async init() {
             if (window.ethereum) {
@@ -368,6 +431,7 @@ export default {
                         utils.put('network', true)
                         // 获取余额
                         await this.getAllBalance()
+                        await this.getTokenScale()
                         const a = this.token1
                         const b = this.token2
                         for (const i of this.allToken) {

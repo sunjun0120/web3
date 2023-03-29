@@ -146,6 +146,7 @@ export default {
         },
         async initList() {
             const web3 = new Web3(window.ethereum)
+            await this.getAllBalance()
             for (const i in this.allLp) {
                 this.$set(this.allLp[i], 'close', true)
                 const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
@@ -159,7 +160,6 @@ export default {
             }
         },
         async openOrClose(index) {
-            await this.getAllBalance()
             for (const i in this.allLp) {
                 if (Number(i) === index) {
                     this.allLp[i].close = !this.allLp[i].close

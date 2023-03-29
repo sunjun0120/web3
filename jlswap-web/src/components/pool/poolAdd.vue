@@ -127,7 +127,7 @@ import Web3 from 'web3'
 import ChangeToken from './changeToken.vue'
 import { tokenList } from '../../constants/tokens'
 import { ERC20 } from '../../constants/abi/ERC20'
-// import { routerAbi } from '../../constants/abi/routerAbi'
+import { routerAbi } from '../../constants/abi/routerAbi'
 import C from '../../constants/contractAddress'
 export default {
     name: '',
@@ -189,31 +189,36 @@ export default {
             // erc20+native
             if (this.token1 === 'MATIC') {
                 let tokenAddress2
+                let decimals2
                 for (const i of this.allToken) {
                     if (i.name === this.token2) {
                         tokenAddress2 = i.address
+                        decimals2 = i.decimals
                     }
                 }
                 const tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
                 const routerAddress = C.router_address
                 // const router = new web3.eth.Contract(routerAbi, routerAddress)
                 const allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
-                if (Number(this.tokenVal2) > allowance2) {
+                const getAllowance2 = allowance2 / Math.pow(10, decimals2)
+                if (Number(this.tokenVal2) > getAllowance2) {
                     await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
             } else if (this.token2 === 'MATIC') {
                 let tokenAddress1
-
+                let decimals1
                 for (const i of this.allToken) {
                     if (i.name === this.token1) {
                         tokenAddress1 = i.address
+                        decimals1 = i.decimals
                     }
                 }
                 const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
                 const routerAddress = C.router_address
                 // const router = new web3.eth.Contract(routerAbi, routerAddress)
                 const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
-                if (Number(this.tokenVal1) > allowance1) {
+                const getAllowance1 = allowance1 / Math.pow(10, decimals1)
+                if (Number(this.tokenVal1) > getAllowance1) {
                     await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
             } else { // erc20+erc20
@@ -236,16 +241,44 @@ export default {
                 const routerAddress = C.router_address
                 const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
                 const allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
-                const getAllowance1 = allowance1 / Math.pow(10, decimals1)
-                const getAllowance2 = allowance2 / Math.pow(10, decimals2)
-                console.log(getAllowance1)
-                console.log(getAllowance2)
-                if (Number(this.tokenVal1) > getAllowance1) {
+                // const getAllowance1 = allowance1 / Math.pow(10, decimals1)
+                // const getAllowance2 = allowance2 / Math.pow(10, decimals2)
+                let getAllowance1
+                let getAllowance2
+                if (decimals1 === 18) {
+                    getAllowance1 = web3.utils.toWei(this.tokenVal1, 'ether')
+                } else {
+                    getAllowance1 = web3.utils.toWei(this.tokenVal1, 'lovelace')
+                }
+                if (decimals2 === 18) {
+                    getAllowance2 = web3.utils.toWei(this.tokenVal2, 'ether')
+                } else {
+                    getAllowance2 = web3.utils.toWei(this.tokenVal2, 'lovelace')
+                }
+                if (Number(getAllowance1) > Number(allowance1)) {
                     await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
-                if (Number(this.tokenVal2) > getAllowance2) {
+                if (Number(getAllowance2) > Number(allowance2)) {
                     await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
+                const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
+                const amountAMin = web3.utils.toWei(((1 - Number(this.settings) / 100) * Number(getAllowance1)).toString(), 'wei')
+                const amountBMin = web3.utils.toWei(((1 - Number(this.settings) / 100) * Number(getAllowance2)).toString(), 'wei')
+                const deadline = Math.floor(Date.now() / 1000) + 60 * 60// 1小时后过期
+
+                const tx = await routerContract.methods.addLiquidity(tokenAddress1, tokenAddress2, getAllowance1, getAllowance2, amountAMin, amountBMin, routerAddress, deadline)
+                const gas = await tx.estimateGas({ from: routerAddress })
+                console.log(gas)
+                // const signedTx = await web3.eth.accounts.signTransaction({
+                //     to: routerAddress,
+                //     data: tx.encodeABI(),
+                //     gas: await tx.estimateGas({ from: this.fromAddress }),
+                //     gasPrice: await web3.eth.getGasPrice(),
+                //     nonce: await web3.eth.getTransactionCount(this.fromAddress, 'pending')
+                // })
+                // console.log(tx.estimateGas({ from: this.fromAddress }))
+                // const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction)
+                // console.log(receipt)
             }
         },
         sureConfirm() {

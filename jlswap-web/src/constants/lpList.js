@@ -6,9 +6,9 @@ export const lpList = [
         address: '0x2cF7252e74036d1Da831d11089D326296e64a728'
     },
     {
-        name: 'USDC-WMATIC',
-        from: 'USDC',
-        to: 'WMATIC',
+        name: 'WMATIC-USDC',
+        from: 'WMATIC',
+        to: 'USDC',
         address: '0x6e7a5FAFcec6BB1e78bAE2A1F0B612012BF14827'
     },
     {
