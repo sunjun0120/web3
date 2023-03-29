@@ -67,7 +67,7 @@
                         <div class="exchangeInfo">
                             <div class="exchangeTip">exchange ratio</div>
                             <div class="exchangeContent">
-                                <div class="scale">1 USDC = 2.49 GLMR</div>
+                                <div class="scale">{{getScaleTip(swapE)}}</div>
                                 <div :class="swapE?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale"></div>
                             </div>
                         </div>
@@ -103,20 +103,20 @@
                 <div class="confirmTip">
                     <div class="left">exchange ratio</div>
                     <div class="right">
-                        <div class="scale">1 USDC = 2.49 GLMR</div>
+                        <div class="scale">{{getScaleTip(swapE2)}}</div>
                         <div :class="swapE2?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale2"></div>
                     </div>
                 </div>
                 <div class="confirmTip">
                     <div class="left">minimum available quantity</div>
-                    <div class="right">0.04 usdc</div>
+                    <div class="right">{{getMinAvailable()}} {{token2}}</div>
                 </div>
                 <div class="confirmTip">
                     <div class="left">tolerable slippage</div>
                     <div class="right">{{ settings }}%</div>
                 </div>
                 <div class="tips">
-                    The output is the estimated value and you will receive at least 0.040007 USDC otherwise the transaction will be rejected.
+                    The output is the estimated value and you will receive at least {{getMinAvailable()}} {{token2}} otherwise the transaction will be rejected.
                 </div>
                 <div class="confirmBtn" @click="sureConfirm">confirm exchange</div>
             </div>
@@ -177,10 +177,14 @@ export default {
         changeToken1(val) {
             this.token1 = val.name
             this.balance1 = this.getShowBalance(val.balance)
+            this.tokenVal1 = null
+            this.tokenVal2 = null
         },
         changeToken2(val) {
             this.token2 = val.name
             this.balance2 = this.getShowBalance(val.balance)
+            this.tokenVal1 = null
+            this.tokenVal2 = null
         },
         getImg(val) {
             for (const i in this.allToken) {
@@ -358,6 +362,19 @@ export default {
                 }
             }
         },
+        getScaleTip(val) {
+            if (!val) {
+                const token1Scale = this.getScale(this.token1)
+                const token2Scale = this.getScale(this.token2)
+                const showScale = token2Scale / token1Scale
+                return '1 ' + this.token1 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token2
+            } else {
+                const token1Scale = this.getScale(this.token1)
+                const token2Scale = this.getScale(this.token2)
+                const showScale = token1Scale / token2Scale
+                return '1 ' + this.token2 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token1
+            }
+        },
         // 获取兑换比例
         async getTokenScale() {
             const web3 = new Web3(window.ethereum)
@@ -377,17 +394,19 @@ export default {
                 this.getBaseVal(name0, name1, exchangeRate)
             }
         },
+        // 获取能接受的最小值
+        getMinAvailable() {
+            const token1Scale = this.getScale(this.token1)
+            const token2Scale = this.getScale(this.token2)
+            const tokenVal = Number(this.tokenVal1) * (token2Scale / token1Scale) * (1 - this.settings / 100)
+            return this.getShowBalance(tokenVal)
+        },
         getBaseVal(name0, name1, scale) {
             for (const i of this.allToken) {
                 if (i.name === 'USDC') {
                     i.baseVal = 1
                 }
-                if (name0 === 'USDC' && name1 === 'USDT') {
-                    if (i.name === name1) {
-                        i.baseVal = scale
-                    }
-                }
-                if (name0 === 'USDC' && name1 === 'JLS') {
+                if (name0 === 'USDC') {
                     if (i.name === name1) {
                         i.baseVal = scale
                     }
@@ -418,6 +437,24 @@ export default {
                 }
             }
         },
+        getScale(token) {
+            for (const i of this.allToken) {
+                if (i.name === token) {
+                    return i.baseVal
+                }
+            }
+        },
+        getOtherCount(index, val) {
+            const token1Scale = this.getScale(this.token1)
+            const token2Scale = this.getScale(this.token2)
+            if (index === 1) {
+                const tokenVal = Number(val) * (token2Scale / token1Scale)
+                return this.getShowBalance(tokenVal)
+            } else if (index === 2) {
+                const tokenVal = Number(val) * (token1Scale / token2Scale)
+                return this.getShowBalance(tokenVal)
+            }
+        },
         // 初始化
         async init() {
             if (window.ethereum) {
@@ -431,7 +468,8 @@ export default {
                         utils.put('network', true)
                         // 获取余额
                         await this.getAllBalance()
-                        await this.getTokenScale()
+                        // 获取兑换比例
+                        this.getTokenScale()
                         const a = this.token1
                         const b = this.token2
                         for (const i of this.allToken) {
@@ -469,8 +507,17 @@ export default {
         tokenVal1(newV, oldV) {
             if (newV && Number(newV) !== 0 && (newV <= this.balance1)) {
                 this.showError = false
+                this.tokenVal2 = this.getOtherCount(1, newV)
             } else {
                 this.showError = true
+                this.tokenVal2 = null
+            }
+        },
+        tokenVal2(newV, oldV) {
+            if (newV && Number(newV) !== 0) {
+                this.tokenVal1 = this.getOtherCount(2, newV)
+            } else {
+                this.tokenVal1 = null
             }
         }
     }
