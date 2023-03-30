@@ -65,6 +65,8 @@ export default {
             font-weight: 400;
             color: #000000;
             margin-top: 30px;
+            max-height: 350px;
+            overflow-y: auto;
         }
         .see{
             color: #E02020;

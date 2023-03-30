@@ -22,7 +22,7 @@
                     <div slot="reference" class="setting el-icon-setting"></div>
                 </el-popover>
             </div>
-            <div class="token-container">
+            <div class="token-container" v-loading='loading'>
                 <div class="token token1" @click="changeToken(1)">
                     <div class="tokenImg"><img :src="getImg(token1)" alt=""></div>
                     <div class="tokenCheck">
@@ -41,7 +41,7 @@
                 </div>
             </div>
             <div :class="swapT?'swapIcon el-icon-bottom':'swapIcon el-icon-bottom rotate'" @click="swapToken"></div>
-            <div class="token-container">
+            <div class="token-container" v-loading='loading'>
                 <div class="token token1" @click="changeToken(2)">
                     <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
                     <div class="tokenCheck">
@@ -79,7 +79,7 @@
             </div>
         </div>
         <el-dialog
-            title="Confirm Exchange"
+            title="confirm exchange"
             custom-class='confirmDia'
             top="5vh"
             :visible.sync="confirmExchange"
@@ -113,11 +113,11 @@
                     <div class="right">{{getMinAvailable()}} {{token2}}</div>
                 </div>
                 <div class="confirmTip">
-                    <div class="left">tolerable slippage</div>
+                    <div class="left">Tolerable Slippage</div>
                     <div class="right">{{ settings }}%</div>
                 </div>
                 <div class="tips">
-                    The output is the estimated value and you will receive at least {{getMinAvailable()}} {{token2}} otherwise the transaction will be rejected.
+                    The output is the estimated value and you will receive at least <span>{{getMinAvailable()}} {{token2}}</span> otherwise the transaction will be rejected.
                 </div>
                 <div class="confirmBtn" @click="sureConfirm">confirm exchange</div>
             </div>
@@ -165,6 +165,7 @@ export default {
             fromAddress: '',
             allToken: tokenList,
             allLp: lpList,
+            loading: false,
             settings: 0.5,
             chainId: 137
         }
@@ -324,7 +325,11 @@ export default {
                 }, function(error, hash) {
                     if (error) {
                         that.$refs.confirmWait.hide()
-                        that.$refs.confirmFail.show(error)
+                        if (error.code !== 4001) {
+                            that.$refs.confirmFail.show(error)
+                        } else {
+                            that.$refs.confirmFail.show('')
+                        }
                     }
                     if (hash) {
                         that.init()
@@ -345,7 +350,11 @@ export default {
                 }, function(error, hash) {
                     if (error) {
                         that.$refs.confirmWait.hide()
-                        that.$refs.confirmFail.show(error)
+                        if (error.code !== 4001) {
+                            that.$refs.confirmFail.show(error)
+                        } else {
+                            that.$refs.confirmFail.show('')
+                        }
                     }
                     if (hash) {
                         that.init()
@@ -375,7 +384,11 @@ export default {
                     }, function(error, hash) {
                         if (error) {
                             that.$refs.confirmWait.hide()
-                            that.$refs.confirmFail.show(error)
+                            if (error.code !== 4001) {
+                                that.$refs.confirmFail.show(error)
+                            } else {
+                                that.$refs.confirmFail.show('')
+                            }
                         }
                         if (hash) {
                             that.init()
@@ -400,7 +413,11 @@ export default {
                     }, function(error, hash) {
                         if (error) {
                             that.$refs.confirmWait.hide()
-                            that.$refs.confirmFail.show(error)
+                            if (error.code !== 4001) {
+                                that.$refs.confirmFail.show(error)
+                            } else {
+                                that.$refs.confirmFail.show('')
+                            }
                         }
                         if (hash) {
                             that.init()
@@ -425,7 +442,11 @@ export default {
                     }, function(error, hash) {
                         if (error) {
                             that.$refs.confirmWait.hide()
-                            that.$refs.confirmFail.show(error)
+                            if (error.code !== 4001) {
+                                that.$refs.confirmFail.show(error)
+                            } else {
+                                that.$refs.confirmFail.show('')
+                            }
                         }
                         if (hash) {
                             that.init()
@@ -713,6 +734,7 @@ export default {
                     if (this.chainId === netId) {
                         this.network = true
                         utils.put('network', true)
+                        this.loading = true
                         // 获取余额
                         await this.getAllBalance()
                         // 获取兑换比例
@@ -728,6 +750,7 @@ export default {
                                 this.balance2 = this.getShowBalance(i.balance)
                             }
                         }
+                        this.loading = false
                     } else {
                         this.network = false
                         utils.put('network', false)
@@ -1047,6 +1070,9 @@ export default {
             line-height: 29px;
             padding:0 10px;
             word-break: break-word;
+            span{
+                font-weight: bold;
+            }
         }
         .confirmBtn{
             height: 70px;

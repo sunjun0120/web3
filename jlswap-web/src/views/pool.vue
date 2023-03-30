@@ -24,19 +24,19 @@
                                     <div class='info'>
                                         <div class='infoItem'>
                                             <div class='infoLeft'>Pool {{i.from}}：</div>
-                                            <div class='infoRight'>{{ getBalance(i.from) }}</div>
+                                            <div class='infoRight'>{{ i.token0Balance }}</div>
                                         </div>
                                         <div class='infoItem'>
                                             <div class='infoLeft'>To pool {{i.to}}： </div>
-                                            <div class='infoRight'>{{ getBalance(i.to) }}</div>
+                                            <div class='infoRight'>{{ i.token1Balance }}</div>
                                         </div>
                                         <div class='infoItem'>
                                             <div class='infoLeft'>Your proportion in the Liquidity Pool： </div>
-                                            <div class='infoRight'>&lt;0.01%</div>
+                                            <div class='infoRight'>{{i.proportion}}</div>
                                         </div>
                                     </div>
                                     <div class='options'>
-                                        <div class='optBtn add'>Add to</div>
+                                        <div class='optBtn add' @click="showAddDia(i.from,i.to)">Add to</div>
                                         <div class='optBtn remove'>Remove</div>
                                     </div>
                                 </div>
@@ -45,7 +45,7 @@
                     </div>
                     <div class='addDiv'>
                         <div class='add' @click="addPool">Add</div>
-                        <div class='import'>Import</div>
+                        <!-- <div class='import'>Import</div> -->
                     </div>
                 </div>
                 <div class='connectWallet' v-else>Network Error</div>
@@ -55,7 +55,7 @@
             </div>
 
         </div>
-        <pool-add v-show="showAdd"></pool-add>
+        <pool-add v-show="showAdd" ref='poolAdd'></pool-add>
     </div>
 </template>
 <script>
@@ -84,6 +84,11 @@ export default {
     },
     methods: {
         addPool() {
+            this.$refs.poolAdd.show('USDC', '')
+            this.showAdd = true
+        },
+        showAddDia(token0, token1) {
+            this.$refs.poolAdd.show(token0, token1)
             this.showAdd = true
         },
         getImg(val) {
@@ -98,27 +103,6 @@ export default {
                 if (this.allToken[i].name === val) {
                     return this.getShowBalance(this.allToken[i].balance)
                 }
-            }
-        },
-        // 获取兑换比例
-        async getTokenScale() {
-            const web3 = new Web3(window.ethereum)
-            for (const i in this.allLp) {
-                const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                const reserves = await scaleContract.methods.getReserves().call()
-                const token0 = await scaleContract.methods.token0().call()
-                const token1 = await scaleContract.methods.token1().call()
-                const decimals0 = this.getTokenDecimals(token0)
-                const decimals1 = this.getTokenDecimals(token1)
-                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
-                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
-                console.log(token0Balance)
-                console.log(token1Balance)
-                // const exchangeRate = token1Balance / token0Balance
-                // this.allLp[i].scale = exchangeRate
-                // const name0 = this.getTokenName(token0)
-                // const name1 = this.getTokenName(token1)
-                // this.getBaseVal(name0, name1, exchangeRate)
             }
         },
         // 保留5位小数
@@ -166,6 +150,14 @@ export default {
                 }
             }
         },
+        getTokenDecimals(val) {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allToken) {
+                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
+                    return this.allToken[i].decimals
+                }
+            }
+        },
         async initList() {
             const web3 = new Web3(window.ethereum)
             this.loading = true
@@ -174,11 +166,27 @@ export default {
                 this.$set(this.allLp[i], 'close', true)
                 const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
                 const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-                console.log(lpBalance)
                 if (lpBalance > 0) {
                     this.$set(this.allLp[i], 'show', true)
                 } else {
                     this.$set(this.allLp[i], 'show', false)
+                }
+                // 获取池子里token额度
+                const reserves = await pool.methods.getReserves().call()
+                const token0 = await pool.methods.token0().call()
+                const token1 = await pool.methods.token1().call()
+                const decimals0 = this.getTokenDecimals(token0)
+                const decimals1 = this.getTokenDecimals(token1)
+                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                this.allLp[i].token0Balance = this.getShowBalance(token0Balance)
+                this.allLp[i].token1Balance = this.getShowBalance(token1Balance)
+                const totalSupply = await pool.methods.totalSupply().call()
+                const percent = ((lpBalance / totalSupply) / 100).toFixed(6)
+                if (percent < 0.01) {
+                    this.allLp[i].proportion = '<0.01%'
+                } else {
+                    this.allLp[i].proportion = percent + '%'
                 }
             }
             this.loading = false
@@ -446,7 +454,7 @@ export default {
                     color:#fff;
                     font-size: 20px;
                     font-weight: 500;
-                    margin-right: 5px;
+                   // margin-right: 5px;
                 }
                 .import{
                     flex:1;

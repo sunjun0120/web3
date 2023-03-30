@@ -22,7 +22,7 @@
                     <div slot="reference" class="setting el-icon-setting"></div>
                 </el-popover>
             </div>
-            <div class="token-container">
+            <div class="token-container" v-loading='loading'>
                 <div class="token token1" @click="changeToken(1)">
                     <div class="tokenImg"><img :src="getImg(token1)" alt=""></div>
                     <div class="tokenCheck">
@@ -41,7 +41,7 @@
                 </div>
             </div>
             <div class='swapIcon el-icon-plus'></div>
-            <div class="token-container">
+            <div class="token-container" v-loading='loading'>
                 <div class="token token1" @click="changeToken(2)">
                     <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
                     <div class="tokenCheck">
@@ -70,13 +70,14 @@
                                 <div :class="swapE?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale"></div>
                             </div>
                         </div>
-                        <div class="approveBtn" @click="confirm">approve</div>
+                        <div class="approveBtn" @click="approve" v-if='!showCofirmBtn'>approve</div>
+                        <div class='approveBtn' v-else @click="confirm">Confirm adding liquidity</div>
                     </div>
                 </div>
             </div>
         </div>
         <el-dialog
-            title="Confirm Exchange"
+            title="you will receive "
             custom-class='confirmDia'
             top="5vh"
             :visible.sync="confirmExchange"
@@ -84,47 +85,54 @@
             <div class="confirmInfo">
                 <div class="confirmExc">
                     <div class="cofirmToken cofirmToken1">
-                        <div class="tokenLeft">
+                        <div class='tokenLeft'>0.0001</div>
+                        <div class="tokenRight">
                             <div class="tokenImg"><img :src="getImg(token1)" alt=""></div>
-                            <div class="tokenName">{{ token1 }}</div>
+                            <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
                         </div>
-                        <div class="tokenRight">{{ tokenVal1 }}</div>
                     </div>
                     <div class="cofirmToken cofirmToken2">
-                        <div class="tokenLeft">
-                            <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
-                            <div class="tokenName">{{ token2 }}</div>
-                        </div>
-                        <div class="tokenRight">{{ tokenVal2 }}</div>
+                        <div class='tokenLeft'>Total tokens in {{ token1 }}/{{ token2 }} liquidity pool</div>
                     </div>
-                </div>
-                <div class="confirmTip">
-                    <div class="left">exchange ratio</div>
-                    <div class="right">
-                        <div class="scale">{{getScaleTip(swapE2)}}</div>
-                        <div :class="swapE2?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale2"></div>
-                    </div>
-                </div>
-                <div class="confirmTip">
-                    <div class="left">minimum available quantity</div>
-                    <div class="right">0.04 usdc</div>
-                </div>
-                <div class="confirmTip">
-                    <div class="left">tolerable slippage</div>
-                    <div class="right">{{ settings }}%</div>
                 </div>
                 <div class="tips">
-                    The output is the estimated value and you will receive at least 0.040007 USDC otherwise the transaction will be rejected.
+                    The output is an estimated value if the price changes by more than {{settings}}%, your trade will be canceled
                 </div>
-                <div class="confirmBtn" @click="sureConfirm">confirm exchange</div>
+                <div class='rateDiv'>
+                    <div class='rateTip'>rate</div>
+                    <div class='rateVal'>
+                        <div class='rateNum'>{{getScaleTip(swapE2)}}</div>
+                        <div class='rateNum'>{{getScaleTip(!swapE2)}}</div>
+                    </div>
+                </div>
+                <div class="confirmTip">
+                    <div class="left">Deposited by {{token1}} </div>
+                    <div class="right">{{tokenVal1}} {{token1}}</div>
+                </div>
+                <div class="confirmTip">
+                    <div class="left">{{token2}} deposited</div>
+                    <div class="right">{{tokenVal2}} {{token2}}</div>
+                </div>
+                <div class="confirmTip">
+                    <div class="left">Shares in the pool</div>
+                    <div class="right">0.000003023%</div>
+                </div>
+
+                <div class="confirmBtn" @click="sureConfirm">confirm supply</div>
             </div>
         </el-dialog>
         <change-token ref="changeToken" @changeToken1='changeToken1' @changeToken2='changeToken2'></change-token>
+        <confirm-wait ref="confirmWait"></confirm-wait>
+        <confirm-success ref="confirmSuccess"></confirm-success>
+        <confirm-fail ref="confirmFail"></confirm-fail>
     </div>
 </template>
 <script>
 import Web3 from 'web3'
 import ChangeToken from './changeToken.vue'
+import ConfirmWait from '../swap/waitDia.vue'
+import ConfirmSuccess from '../swap/success.vue'
+import ConfirmFail from '../swap/fail.vue'
 import { tokenList } from '../../constants/tokens'
 import { lpList } from '../../constants/lpList'
 import { ERC20 } from '../../constants/abi/ERC20'
@@ -134,11 +142,11 @@ import C from '../../constants/contractAddress'
 export default {
     name: '',
     components: {
-        ChangeToken
+        ChangeToken, ConfirmWait, ConfirmSuccess, ConfirmFail
     },
     data () {
         return {
-            token1: 'USDC',
+            token1: '',
             token2: '',
             balance1: 0,
             balance2: 0,
@@ -152,11 +160,19 @@ export default {
             fromAddress: '',
             allToken: tokenList,
             allLp: lpList,
+            loading: false,
+            showCofirmBtn: false,
             settings: 0.5,
             chainId: 137
         }
     },
     methods: {
+        show(token0, token1) {
+            this.token1 = token0
+            this.token2 = token1
+            this.showCofirmBtn = false
+            this.init()
+        },
         async changeToken(val) {
             if (val === 1) {
                 this.$refs.changeToken.show1(this.token1, this.token2)
@@ -167,10 +183,14 @@ export default {
         changeToken1(val) {
             this.token1 = val.name
             this.balance1 = this.getShowBalance(val.balance)
+            this.tokenVal1 = null
+            this.tokenVal2 = null
         },
         changeToken2(val) {
             this.token2 = val.name
             this.balance2 = this.getShowBalance(val.balance)
+            this.tokenVal1 = null
+            this.tokenVal2 = null
         },
         limitToken1() {
             this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
@@ -188,109 +208,172 @@ export default {
         changeScale() {
             this.swapE = !this.swapE
         },
-        changeScale2() {
-            this.swapE2 = !this.swapE2
+
+        async sureConfirm() {
+            const message1 = this.tokenVal1 + ' ' + this.token1
+            const message2 = this.tokenVal2 + ' ' + this.token2
+            this.$refs.confirmWait.show(message1, message2)
+            const web3 = new Web3(window.ethereum)
+            let tokenAddress1
+            let tokenAddress2
+            let decimals1
+            let decimals2
+            let getAllowance1
+            let getAllowance2
+            for (const i of this.allToken) {
+                if (i.name === this.token1) {
+                    tokenAddress1 = i.address
+                    decimals1 = i.decimals
+                }
+                if (i.name === this.token2) {
+                    tokenAddress2 = i.address
+                    decimals2 = i.decimals
+                }
+            }
+            if (decimals1 === 18) {
+                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
+            } else {
+                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
+            }
+            if (decimals2 === 18) {
+                getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'ether')
+            } else {
+                getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
+            }
+            const routerAddress = C.router_address
+            const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
+            const amountAMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance1))).toString(), 'wei')
+            const amountBMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance2))).toString(), 'wei')
+            const deadline = Math.floor(Date.now() / 1000) + 60 * 60// 1小时后过期
+            const that = this
+            if (this.token1 === 'MATIC' || this.token2 === 'MATIC') { // erc20+native
+                let tokenAddress
+                let amountTokenDesired
+                let amountTokenMin
+                let amountETHMin
+                let amountETHDesired
+                if (this.token1 === 'MATIC') {
+                    tokenAddress = tokenAddress2
+                    amountTokenDesired = getAllowance2
+                    amountETHDesired = getAllowance1
+                    amountETHMin = amountAMin
+                    amountTokenMin = amountBMin
+                } else {
+                    tokenAddress = tokenAddress1
+                    amountTokenDesired = getAllowance1
+                    amountETHDesired = getAllowance2
+                    amountETHMin = amountBMin
+                    amountTokenMin = amountAMin
+                }
+                const tx = await routerContract.methods.addLiquidityETH(tokenAddress, amountTokenDesired, amountTokenMin, amountETHMin, this.fromAddress, deadline)
+                await web3.eth.sendTransaction({
+                    from: this.fromAddress,
+                    to: routerAddress,
+                    value: web3.utils.toHex(amountETHDesired),
+                    data: tx.encodeABI(),
+                    gas: await tx.estimateGas({
+                        from: this.fromAddress,
+                        value: web3.utils.toHex(amountETHDesired)
+                    }),
+                    gasPrice: await web3.eth.getGasPrice()
+                }, function(error, hash) {
+                    if (error) {
+                        that.$refs.confirmWait.hide()
+                        if (error.code !== 4001) {
+                            that.$refs.confirmFail.show(error)
+                        } else {
+                            that.$refs.confirmFail.show('')
+                        }
+                    }
+                    if (hash) {
+                        that.init()
+                        that.$refs.confirmWait.hide()
+                        that.$refs.confirmSuccess.show(hash)
+                        that.getStatus(hash)
+                    }
+                })
+            } else { // erc20+erc20
+                const tx = await routerContract.methods.addLiquidity(tokenAddress1, tokenAddress2, getAllowance1, getAllowance2, amountAMin, amountBMin, this.fromAddress, deadline)
+                await web3.eth.sendTransaction({
+                    from: this.fromAddress,
+                    to: routerAddress,
+                    data: tx.encodeABI(),
+                    gas: await tx.estimateGas({ from: this.fromAddress }),
+                    gasPrice: await web3.eth.getGasPrice()
+                }, function(error, hash) {
+                    if (error) {
+                        that.$refs.confirmWait.hide()
+                        if (error.code !== 4001) {
+                            that.$refs.confirmFail.show(error)
+                        } else {
+                            that.$refs.confirmFail.show('')
+                        }
+                    }
+                    if (hash) {
+                        that.init()
+                        that.$refs.confirmWait.hide()
+                        that.$refs.confirmSuccess.show(hash)
+                        that.getStatus(hash)
+                    }
+                })
+            }
         },
-        async confirm() {
+        confirm() {
+            this.confirmExchange = true
+        },
+        async approve() {
             // 审批，查询当前用户的erc20代币对于router的授权数量
             const web3 = new Web3(window.ethereum)
             const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
-            // erc20+native
-            if (this.token1 === 'MATIC') {
-                let tokenAddress2
-                let decimals2
-                for (const i of this.allToken) {
-                    if (i.name === this.token2) {
-                        tokenAddress2 = i.address
-                        decimals2 = i.decimals
-                    }
+            let tokenAddress1
+            let tokenAddress2
+            let decimals1
+            let decimals2
+            let getAllowance1
+            let getAllowance2
+            for (const i of this.allToken) {
+                if (i.name === this.token1) {
+                    tokenAddress1 = i.address
+                    decimals1 = i.decimals
                 }
-                const tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
-                const routerAddress = C.router_address
-                // const router = new web3.eth.Contract(routerAbi, routerAddress)
-                const allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
-                const getAllowance2 = allowance2 / Math.pow(10, decimals2)
-                if (Number(this.tokenVal2) > getAllowance2) {
+                if (i.name === this.token2) {
+                    tokenAddress2 = i.address
+                    decimals2 = i.decimals
+                }
+            }
+            const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
+            const tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
+            const routerAddress = C.router_address
+            const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
+            const allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
+
+            if (decimals1 === 18) {
+                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
+            } else {
+                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
+            }
+            if (decimals2 === 18) {
+                getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'ether')
+            } else {
+                getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
+            }
+            if (this.token1 === 'MATIC') { // erc20+native
+                if (Number(getAllowance2) > Number(allowance2)) {
                     await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
-            } else if (this.token2 === 'MATIC') {
-                let tokenAddress1
-                let decimals1
-                for (const i of this.allToken) {
-                    if (i.name === this.token1) {
-                        tokenAddress1 = i.address
-                        decimals1 = i.decimals
-                    }
-                }
-                const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
-                const routerAddress = C.router_address
-                // const router = new web3.eth.Contract(routerAbi, routerAddress)
-                const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
-                const getAllowance1 = allowance1 / Math.pow(10, decimals1)
-                if (Number(this.tokenVal1) > getAllowance1) {
+            } else if (this.token2 === 'MATIC') { // erc20+native
+                if (Number(getAllowance1) > Number(allowance1)) {
                     await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
             } else { // erc20+erc20
-                let tokenAddress1
-                let tokenAddress2
-                let decimals1
-                let decimals2
-                for (const i of this.allToken) {
-                    if (i.name === this.token1) {
-                        tokenAddress1 = i.address
-                        decimals1 = i.decimals
-                    }
-                    if (i.name === this.token2) {
-                        tokenAddress2 = i.address
-                        decimals2 = i.decimals
-                    }
-                }
-                const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
-                const tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
-                const routerAddress = C.router_address
-                const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
-                const allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
-                let getAllowance1
-                let getAllowance2
-                if (decimals1 === 18) {
-                    getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
-                } else {
-                    getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
-                }
-                if (decimals2 === 18) {
-                    getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'ether')
-                } else {
-                    getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
-                }
                 if (Number(getAllowance1) > Number(allowance1)) {
                     await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
                 if (Number(getAllowance2) > Number(allowance2)) {
                     await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
-                const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
-                const amountAMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance1))).toString(), 'wei')
-                const amountBMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance2))).toString(), 'wei')
-                const deadline = Math.floor(Date.now() / 1000) + 60 * 60// 1小时后过期
-
-                const tx = await routerContract.methods.addLiquidity(tokenAddress1, tokenAddress2, getAllowance1, getAllowance2, amountAMin, amountBMin, this.fromAddress, deadline)
-                const signedTx = await web3.eth.sendTransaction({
-                    from: this.fromAddress,
-                    to: routerAddress,
-                    data: tx.encodeABI(),
-                    gas: await tx.estimateGas({ from: this.fromAddress }),
-                    gasPrice: await web3.eth.getGasPrice()
-                })
-                console.log(signedTx)
-                // const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction)
-                // console.log(receipt)
             }
-        },
-        sureConfirm() {
-            this.confirmExchange = false
-            // this.$refs.confirmWait.show()
-            // this.$refs.confirmSuccess.show()
-            // this.$refs.confirmFail.show()
+            this.showCofirmBtn = true
         },
         autoPercent() {
             this.settings = 0.1
@@ -384,6 +467,13 @@ export default {
                 this.getBaseVal(name0, name1, exchangeRate)
             }
         },
+        // 获取能接受的最小值
+        getMinAvailable() {
+            const token1Scale = this.getScale(this.token1)
+            const token2Scale = this.getScale(this.token2)
+            const tokenVal = Number(this.tokenVal1) * (token2Scale / token1Scale) * (1 - this.settings / 100)
+            return this.getShowBalance(tokenVal)
+        },
         getBaseVal(name0, name1, scale) {
             for (const i of this.allToken) {
                 if (i.name === 'USDC') {
@@ -446,6 +536,7 @@ export default {
                 this.fromAddress = fromAddress[0]
                 if (this.fromAddress) {
                     // 获取余额
+                    this.loading = true
                     await this.getAllBalance()
                     // 获取兑换比例
                     this.getTokenScale()
@@ -458,6 +549,7 @@ export default {
                             this.balance2 = this.getShowBalance(i.balance)
                         }
                     }
+                    this.loading = false
                 } else {
                     this.balance1 = 0
                     this.balance2 = 0
@@ -476,9 +568,9 @@ export default {
             }
         }
     },
-    mounted () {
-        this.init()
-    },
+    // mounted () {
+    //     this.init()
+    // },
     watch: {
         settings(newV, oldV) {
             if (newV !== 0.1) {
@@ -705,23 +797,24 @@ export default {
             background: #E9EEF4;
             border-radius: 16px;
             margin-top: 30px;
-            padding:30px 10px;
-            padding-right: 30px;
+            padding:30px;
+
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             .cofirmToken{
                 display: flex;
-                justify-content: space-between;
                 align-items: center;
-                .tokenLeft{
+                .tokenRight{
                     display: flex;
                     align-items: center;
+                    margin-left: 30px;
                     .tokenImg{
                         width: 54px;
                         height: 54px;
                         border-radius: 50%;
+                        margin-right: 5px;
                         img{
                             width: 100%;
                             height: 100%;
@@ -735,10 +828,12 @@ export default {
                         font-weight: 500;
                     }
                 }
-                .tokenRight{
+                .tokenLeft{
                     font-size: 26px;
                     color: #000000;
-                    font-weight: 500;
+                    font-weight: bold;
+                    word-break: break-word;
+                    text-align: left;
                 }
             }
         }
@@ -749,7 +844,7 @@ export default {
             font-size: 20px;
             font-weight: 400;
             color: #000000;
-            margin-top: 40px;
+            margin-top: 15px;
             padding:0 10px;
             .right{
                 display: flex;
@@ -769,11 +864,26 @@ export default {
             font-size: 20px;
             font-weight: 400;
             color: rgba(0,0,0,0.5);
-            margin-top: 45px;
+            margin-top: 20px;
             text-align: left;
             line-height: 29px;
             padding:0 10px;
             word-break: break-word;
+        }
+        .rateDiv{
+            display: flex;
+            justify-content: space-between;
+            margin-top: 35px;
+            font-size: 20px;
+            color: #000000;
+            font-weight: 500;
+            padding: 0 10px;
+            padding-bottom: 40px;
+            border-bottom: 2px solid #979797;
+            margin-bottom: 20px;
+            .rateNum{
+                margin-bottom:15px;
+            }
         }
         .confirmBtn{
             height: 70px;

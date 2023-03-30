@@ -65,6 +65,9 @@ export default {
                 } else {
                     this.tableData[i].disable = false
                 }
+                if (this.tableData[i].name === 'MATIC') {
+                    this.tableData[i].disable = true
+                }
             }
             this.switchToken = 1
             this.loading = true
@@ -99,6 +102,9 @@ export default {
                     } else {
                         this.tableData[i].disable = true
                     }
+                }
+                if (this.tableData[i].name === 'MATIC') {
+                    this.tableData[i].disable = true
                 }
             }
             this.switchToken = 2
