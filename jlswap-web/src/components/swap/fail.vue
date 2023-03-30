@@ -9,7 +9,7 @@
             <div class="waitContent">
                 <div class="img"></div>
                 <div class="waitTip">Transaction rejected</div>
-                <div class="info">Dismiss</div>
+                <div class="info">{{ message }}</div>
             </div>
         </el-dialog>
     </div>
@@ -19,12 +19,14 @@ export default {
     name: '',
     data () {
         return {
-            confirmWait: false
+            confirmWait: false,
+            message: 'Dismiss'
         }
     },
     methods: {
-        show() {
+        show(val) {
             this.confirmWait = true
+            this.message = val || 'Dismiss'
         }
     }
 }

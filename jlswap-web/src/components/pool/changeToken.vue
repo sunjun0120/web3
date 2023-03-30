@@ -6,7 +6,7 @@
             top="15vh"
             :visible.sync="tokenListShow"
         >
-            <div class="listContent">
+            <div class="listContent" v-loading="loading">
                 <div :class="i.disable?'item disable':'item'" v-for="i,index in tableData" :key="index" @click="changeToken(i)">
                     <div class="left">
                         <div class="img"><img :src="i.icon" alt=""></div>
@@ -19,18 +19,24 @@
     </div>
 </template>
 <script>
+import Web3 from 'web3'
+import { ERC20 } from '../../constants/abi/ERC20'
+import { tokenList } from '../../constants/tokens'
 export default {
     name: '',
     data () {
         return {
             tokenListShow: false,
             tableData: [],
-            switchToken: 1
+            switchToken: 1,
+            fromAddress: '',
+            allToken: tokenList,
+            loading: true
         }
     },
     methods: {
-        show1(token1, token2, val) {
-            this.tableData = val
+        async show1(token1, token2) {
+            this.tableData = this.allToken
             for (const i in this.tableData) {
                 if (token2 === 'USDT') {
                     if (this.tableData[i].name === 'USDC') {
@@ -61,10 +67,13 @@ export default {
                 }
             }
             this.switchToken = 1
+            this.loading = true
             this.tokenListShow = true
+            await this.getAllBalance()
+            this.loading = false
         },
-        show2(token1, token2, val) {
-            this.tableData = val
+        async show2(token1, token2) {
+            this.tableData = this.allToken
             for (const i in this.tableData) {
                 if (token1 === 'USDT') {
                     if (this.tableData[i].name === 'USDC') {
@@ -93,7 +102,10 @@ export default {
                 }
             }
             this.switchToken = 2
+            this.loading = true
             this.tokenListShow = true
+            await this.getAllBalance()
+            this.loading = false
         },
         getShowBalance(val) {
             const balance = Math.round(val * Math.pow(10, 5)) / Math.pow(10, 5)
@@ -109,6 +121,39 @@ export default {
                     this.tokenListShow = false
                 }
             }
+        },
+        // 获取所有代币余额
+        async getAllBalance() {
+            if (window.ethereum) {
+                const web3 = new Web3(window.ethereum)
+                const fromAddress = await web3.eth.getAccounts()
+                this.fromAddress = fromAddress[0]
+                for (const i of this.allToken) {
+                    if (i.name === 'MATIC') { // 原生币通过钱包获取余额
+                        web3.eth.getBalance(fromAddress[0], (err, res) => {
+                            if (!err) {
+                                const balance = res / Math.pow(10, 18)
+                                i.balance = balance
+                            }
+                        })
+                    } else {
+                        if (i.address) {
+                            i.balance = await this.getTokenBalance(i.address, i.decimals)
+                        } else {
+                            i.balance = 0
+                        }
+                    }
+                }
+            }
+        },
+        // 获取代币余额
+        async getTokenBalance(address, decimals) {
+            const web3 = new Web3(window.ethereum)
+            const contractAddress = address
+            const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+            const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
+            const balanceVal = balance / Math.pow(10, decimals)
+            return balanceVal
         }
     }
 }

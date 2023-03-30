@@ -9,7 +9,7 @@
             </div>
             <div class='userState' v-if='fromAddress'>
                 <div  v-if='network'>
-                    <div class='poolList'>
+                    <div class='poolList' v-loading="loading">
                         <div v-for='i,index in allLp' :key='index'>
                             <div class='poolItem' v-if="i.show">
                                 <div class='top'>
@@ -78,6 +78,7 @@ export default {
             allToken: tokenList,
             allLp: lpList,
             showAdd: false,
+            loading: true,
             chainId: 137
         }
     },
@@ -97,6 +98,27 @@ export default {
                 if (this.allToken[i].name === val) {
                     return this.getShowBalance(this.allToken[i].balance)
                 }
+            }
+        },
+        // 获取兑换比例
+        async getTokenScale() {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allLp) {
+                const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+                const reserves = await scaleContract.methods.getReserves().call()
+                const token0 = await scaleContract.methods.token0().call()
+                const token1 = await scaleContract.methods.token1().call()
+                const decimals0 = this.getTokenDecimals(token0)
+                const decimals1 = this.getTokenDecimals(token1)
+                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                console.log(token0Balance)
+                console.log(token1Balance)
+                // const exchangeRate = token1Balance / token0Balance
+                // this.allLp[i].scale = exchangeRate
+                // const name0 = this.getTokenName(token0)
+                // const name1 = this.getTokenName(token1)
+                // this.getBaseVal(name0, name1, exchangeRate)
             }
         },
         // 保留5位小数
@@ -146,7 +168,8 @@ export default {
         },
         async initList() {
             const web3 = new Web3(window.ethereum)
-            await this.getAllBalance()
+            this.loading = true
+            // await this.getAllBalance()
             for (const i in this.allLp) {
                 this.$set(this.allLp[i], 'close', true)
                 const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
@@ -158,6 +181,7 @@ export default {
                     this.$set(this.allLp[i], 'show', false)
                 }
             }
+            this.loading = false
         },
         async openOrClose(index) {
             for (const i in this.allLp) {

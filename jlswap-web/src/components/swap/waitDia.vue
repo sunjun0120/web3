@@ -7,10 +7,10 @@
             :visible.sync="confirmWait"
         >
             <div class="waitContent">
-                <div class="img"></div>
+                <div class="img" v-loading="loading"></div>
                 <div class="waitTip">Waiting for confirmation</div>
-                <div class="info">将0.10GLMR换成0.04USDC</div>
-                <div class="info">（在钱包中确认这笔交易）</div>
+                <div class="info">将{{msg1}}换成{{msg2}}</div>
+                <div class="info">（Confirm the transaction in the wallet）</div>
             </div>
         </el-dialog>
     </div>
@@ -20,12 +20,20 @@ export default {
     name: '',
     data () {
         return {
-            confirmWait: false
+            loading: true,
+            confirmWait: false,
+            msg1: '',
+            msg2: ''
         }
     },
     methods: {
-        show() {
+        show(message1, message2) {
+            this.msg1 = message1
+            this.msg2 = message2
             this.confirmWait = true
+        },
+        hide() {
+            this.confirmWait = false
         }
     }
 }
@@ -64,6 +72,9 @@ export default {
             color: #000000;
             margin-top: 30px;
         }
+    }
+    .el-loading-mask{
+        background-color:#F5F8FC;
     }
 }
 </style>

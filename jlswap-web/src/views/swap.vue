@@ -32,7 +32,7 @@
                 </div>
                 <div class="tokenNum">
                     <div class="numLeft">
-                        <el-input v-model="tokenVal1" placeholder="0" type="number" class="tokenVal"></el-input>
+                        <el-input v-model="tokenVal1" placeholder="0" type="number" class="tokenVal" @input="limitToken1"></el-input>
                     </div>
                     <div class="numRight">
                         <div class="numTip">balance</div>
@@ -51,7 +51,7 @@
                 </div>
                 <div class="tokenNum">
                     <div class="numLeft">
-                        <el-input v-model="tokenVal2" placeholder="0" type="number" class="tokenVal"></el-input>
+                        <el-input v-model="tokenVal2" placeholder="0" type="number" class="tokenVal" @input="limitToken2"></el-input>
                     </div>
                     <div class="numRight">
                         <div class="numTip">balance</div>
@@ -71,7 +71,8 @@
                                 <div :class="swapE?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale"></div>
                             </div>
                         </div>
-                        <div class="approveBtn" @click="confirm">approve</div>
+                        <div class="approveBtn" @click="approve" v-if="token1!=='MATIC'">approve</div>
+                        <div class="approveBtn" @click="confirm" v-else>confirm</div>
                     </div>
                 </div>
                 <div class="connectWallet" v-else>Network Error</div>
@@ -138,6 +139,9 @@ import { tokenList } from '../constants/tokens'
 import { lpList } from '../constants/lpList'
 import { ERC20 } from '../constants/abi/ERC20'
 import { pairAbi } from '../constants/abi/pairAbi'
+import { routerAbi } from '../constants/abi/routerAbi'
+import { wmaticAbi } from '../constants/abi/wmaticAbi'
+import C from '../constants/contractAddress'
 export default {
     name: '',
     components: {
@@ -167,11 +171,10 @@ export default {
     },
     methods: {
         async changeToken(val) {
-            await this.getAllBalance()
             if (val === 1) {
-                this.$refs.changeToken.show1(this.token1, this.token2, this.allToken)
+                this.$refs.changeToken.show1(this.token1, this.token2)
             } else {
-                this.$refs.changeToken.show2(this.token1, this.token2, this.allToken)
+                this.$refs.changeToken.show2(this.token1, this.token2)
             }
         },
         changeToken1(val) {
@@ -186,6 +189,12 @@ export default {
             this.tokenVal1 = null
             this.tokenVal2 = null
         },
+        limitToken1() {
+            this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+        },
+        limitToken2() {
+            this.tokenVal1 = this.getOtherCount(1, this.tokenVal2)
+        },
         getImg(val) {
             for (const i in this.allToken) {
                 if (this.allToken[i].name === val) {
@@ -199,10 +208,14 @@ export default {
             const b = this.token2
             const c = this.balance1
             const d = this.balance2
+            const e = this.tokenVal1
+            const f = this.tokenVal2
             this.token1 = b
             this.token2 = a
             this.balance1 = d
             this.balance2 = c
+            this.tokenVal1 = f
+            this.tokenVal2 = e
         },
         changeScale() {
             this.swapE = !this.swapE
@@ -211,13 +224,248 @@ export default {
             this.swapE2 = !this.swapE2
         },
         confirm() {
+            // 已经approve 或者原生代币
             this.confirmExchange = true
         },
-        sureConfirm() {
+        async approve() {
+            // erc20代币
+            const web3 = new Web3(window.ethereum)
+            const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
+            let tokenAddress1
+            let decimals1
+            let getAllowance1
+            for (const i of this.allToken) {
+                if (i.name === this.token1) {
+                    tokenAddress1 = i.address
+                    decimals1 = i.decimals
+                }
+            }
+            if (decimals1 === 18) {
+                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
+            } else {
+                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
+            }
+            const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
+            const routerAddress = C.router_address
+            const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
+            if (Number(getAllowance1) > Number(allowance1)) {
+                await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
+            }
+            this.confirm()
+        },
+        async sureConfirm() {
             this.confirmExchange = false
-            // this.$refs.confirmWait.show()
-            // this.$refs.confirmSuccess.show()
-            // this.$refs.confirmFail.show()
+            const message1 = this.tokenVal1 + ' ' + this.token1
+            const message2 = this.tokenVal2 + ' ' + this.token2
+            this.$refs.confirmWait.show(message1, message2)
+            const web3 = new Web3(window.ethereum)
+            const routerAddress = C.router_address
+            const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
+            const deadline = Math.floor(Date.now() / 1000) + 60 * 60// 1小时后过期
+            let getAllowance1
+            let getAllowance2
+            let tokenAddress2
+            let tokenAddress1
+            let decimals1
+            let decimals2
+            let wmaticAddress
+            for (const i of this.allToken) {
+                if (i.name === this.token1) {
+                    tokenAddress1 = i.address
+                    decimals1 = i.decimals
+                }
+                if (i.name === this.token2) {
+                    tokenAddress2 = i.address
+                    decimals2 = i.decimals
+                }
+                if (this.token1 === 'MATIC') {
+                    if (i.name === 'WMATIC') {
+                        tokenAddress1 = i.address
+                        decimals1 = i.decimals
+                    }
+                }
+                if (this.token2 === 'MATIC') {
+                    if (i.name === 'WMATIC') {
+                        tokenAddress2 = i.address
+                        decimals2 = i.decimals
+                    }
+                }
+                if (i.name === 'WMATIC') {
+                    wmaticAddress = i.address
+                }
+            }
+            if (decimals1 === 18) {
+                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
+            } else {
+                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
+            }
+            if (decimals2 === 18) {
+                getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'ether')
+            } else {
+                getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
+            }
+            const amountIn = getAllowance1
+            const amountOutMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance2))).toString(), 'wei')
+            let tx
+            const wmaticContract = new web3.eth.Contract(wmaticAbi, wmaticAddress)
+            if (this.token1 === 'MATIC' && this.token2 === 'WMATIC') {
+                tx = await wmaticContract.methods.deposit()
+                const that = this
+                await web3.eth.sendTransaction({
+                    from: this.fromAddress,
+                    to: wmaticAddress,
+                    data: tx.encodeABI(),
+                    value: web3.utils.toHex(amountIn),
+                    gas: await tx.estimateGas({
+                        from: this.fromAddress,
+                        value: web3.utils.toHex(amountIn)
+                    }),
+                    gasPrice: await web3.eth.getGasPrice()
+                }, function(error, hash) {
+                    if (error) {
+                        that.$refs.confirmWait.hide()
+                        that.$refs.confirmFail.show(error)
+                    }
+                    if (hash) {
+                        that.init()
+                        that.$refs.confirmWait.hide()
+                        that.$refs.confirmSuccess.show(hash)
+                        that.getStatus(hash)
+                    }
+                })
+            } else if (this.token2 === 'MATIC' && this.token1 === 'WMATIC') {
+                tx = await wmaticContract.methods.withdraw(amountIn)
+                const that = this
+                await web3.eth.sendTransaction({
+                    from: this.fromAddress,
+                    to: wmaticAddress,
+                    data: tx.encodeABI(),
+                    gas: await tx.estimateGas({ from: this.fromAddress }),
+                    gasPrice: await web3.eth.getGasPrice()
+                }, function(error, hash) {
+                    if (error) {
+                        that.$refs.confirmWait.hide()
+                        that.$refs.confirmFail.show(error)
+                    }
+                    if (hash) {
+                        that.init()
+                        that.$refs.confirmWait.hide()
+                        that.$refs.confirmSuccess.show(hash)
+                        that.getStatus(hash)
+                    }
+                })
+            } else {
+                if (this.token1 === 'MATIC') { // native -> erc20
+                    const path = [tokenAddress1, tokenAddress2]
+                    tx = await routerContract.methods.swapExactETHForTokens(amountOutMin, path, this.fromAddress, deadline)
+                    const that = this
+                    await web3.eth.sendTransaction({
+                        from: this.fromAddress,
+                        to: routerAddress,
+                        data: tx.encodeABI(),
+                        value: web3.utils.toHex(amountIn),
+                        gas: await tx.estimateGas({
+                            from: this.fromAddress,
+                            value: web3.utils.toHex(amountIn)
+                        }).catch(() => {
+                            that.$refs.confirmWait.hide()
+                            that.$refs.confirmFail.show('Please modify slippage')
+                        }),
+                        gasPrice: await web3.eth.getGasPrice()
+                    }, function(error, hash) {
+                        if (error) {
+                            that.$refs.confirmWait.hide()
+                            that.$refs.confirmFail.show(error)
+                        }
+                        if (hash) {
+                            that.init()
+                            that.$refs.confirmWait.hide()
+                            that.$refs.confirmSuccess.show(hash)
+                            that.getStatus(hash)
+                        }
+                    })
+                } else if (this.token1 !== 'MATIC' && this.token2 !== 'MATIC') { // erc20 -> erc20
+                    const path = [tokenAddress1, tokenAddress2]
+                    tx = await routerContract.methods.swapExactTokensForTokens(amountIn, amountOutMin, path, this.fromAddress, deadline)
+                    const that = this
+                    await web3.eth.sendTransaction({
+                        from: this.fromAddress,
+                        to: routerAddress,
+                        data: tx.encodeABI(),
+                        gas: await tx.estimateGas({ from: this.fromAddress }).catch(() => {
+                            that.$refs.confirmWait.hide()
+                            that.$refs.confirmFail.show('Please modify slippage')
+                        }),
+                        gasPrice: await web3.eth.getGasPrice()
+                    }, function(error, hash) {
+                        if (error) {
+                            that.$refs.confirmWait.hide()
+                            that.$refs.confirmFail.show(error)
+                        }
+                        if (hash) {
+                            that.init()
+                            that.$refs.confirmWait.hide()
+                            that.$refs.confirmSuccess.show(hash)
+                            that.getStatus(hash)
+                        }
+                    })
+                } else if (this.token2 === 'MATIC') { // erc20 -> native
+                    const path = [tokenAddress1, tokenAddress2]
+                    tx = await routerContract.methods.swapExactTokensForETH(amountIn, amountOutMin, path, this.fromAddress, deadline)
+                    const that = this
+                    await web3.eth.sendTransaction({
+                        from: this.fromAddress,
+                        to: routerAddress,
+                        data: tx.encodeABI(),
+                        gas: await tx.estimateGas({ from: this.fromAddress }).catch(() => {
+                            that.$refs.confirmWait.hide()
+                            that.$refs.confirmFail.show('Please modify slippage')
+                        }),
+                        gasPrice: await web3.eth.getGasPrice()
+                    }, function(error, hash) {
+                        if (error) {
+                            that.$refs.confirmWait.hide()
+                            that.$refs.confirmFail.show(error)
+                        }
+                        if (hash) {
+                            that.init()
+                            that.$refs.confirmWait.hide()
+                            that.$refs.confirmSuccess.show(hash)
+                            that.getStatus(hash)
+                        }
+                    })
+                }
+            }
+        },
+        // 监听状态
+        getStatus(val) {
+            const web3 = new Web3(window.ethereum)
+            const that = this
+            const startTime = Date.now() // 记录开始时间
+            const timeout = 5 * 60 * 1000 // 设置超时时间为5分钟
+            web3.eth.getTransactionReceipt(val, (error, receipt) => {
+                if (error) {
+                    console.log(error)
+                } else {
+                    if (receipt === null) {
+                        const elapsedTime = Date.now() - startTime
+                        if (elapsedTime < timeout) {
+                            setTimeout(that.getStatus(val), 1000)
+                        } else {
+                            console.error('Transaction timed out')
+                        }
+                    } else if (receipt.status === 0) {
+                        that.$notify.error({
+                            title: 'Transaction fail'
+                        })
+                    } else {
+                        that.$notify({
+                            title: 'Transaction success',
+                            type: 'success'
+                        })
+                    }
+                }
+            })
         },
         autoPercent() {
             this.settings = 0.1
@@ -325,9 +573,8 @@ export default {
         async getTokenBalance(address, decimals) {
             const web3 = new Web3(window.ethereum)
             const contractAddress = address
-            const fromAddress = await web3.eth.getAccounts()
             const ethContract = new web3.eth.Contract(ERC20, contractAddress)
-            const balance = await ethContract.methods.balanceOf(fromAddress[0]).call()
+            const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
             const balanceVal = balance / Math.pow(10, decimals)
             return balanceVal
         },
@@ -470,6 +717,8 @@ export default {
                         await this.getAllBalance()
                         // 获取兑换比例
                         this.getTokenScale()
+                        this.tokenVal1 = null
+                        this.tokenVal2 = null
                         const a = this.token1
                         const b = this.token2
                         for (const i of this.allToken) {
@@ -482,6 +731,7 @@ export default {
                     } else {
                         this.network = false
                         utils.put('network', false)
+                        this.connectWeb3()
                     }
                 } else {
                     this.balance1 = 0
@@ -507,17 +757,8 @@ export default {
         tokenVal1(newV, oldV) {
             if (newV && Number(newV) !== 0 && (newV <= this.balance1)) {
                 this.showError = false
-                this.tokenVal2 = this.getOtherCount(1, newV)
             } else {
                 this.showError = true
-                this.tokenVal2 = null
-            }
-        },
-        tokenVal2(newV, oldV) {
-            if (newV && Number(newV) !== 0) {
-                this.tokenVal1 = this.getOtherCount(2, newV)
-            } else {
-                this.tokenVal1 = null
             }
         }
     }

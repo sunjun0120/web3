@@ -8,9 +8,9 @@
         >
             <div class="waitContent">
                 <div class="img"></div>
-                <div class="waitTip">交易已提交</div>
-                <div class="info see">请在浏览器查看</div>
-                <div class="info">将USDC加入MateMask</div>
+                <div class="waitTip">Transaction submitted</div>
+                <div class="info see" @click="goUrl">View in browser</div>
+                <!-- <div class="info">将USDC加入MateMask</div> -->
             </div>
         </el-dialog>
     </div>
@@ -20,12 +20,17 @@ export default {
     name: '',
     data () {
         return {
-            confirmWait: false
+            confirmWait: false,
+            url: ''
         }
     },
     methods: {
-        show() {
+        show(val) {
+            this.url = val
             this.confirmWait = true
+        },
+        goUrl() {
+            window.open('https://polygonscan.com/tx/' + this.url)
         }
     }
 }

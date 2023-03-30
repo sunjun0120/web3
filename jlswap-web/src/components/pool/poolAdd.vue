@@ -32,7 +32,7 @@
                 </div>
                 <div class="tokenNum">
                     <div class="numLeft">
-                        <el-input v-model="tokenVal1" placeholder="0" type="number" class="tokenVal"></el-input>
+                        <el-input v-model="tokenVal1" placeholder="0" type="number" class="tokenVal" @input="limitToken1"></el-input>
                     </div>
                     <div class="numRight">
                         <div class="numTip">balance</div>
@@ -51,7 +51,7 @@
                 </div>
                 <div class="tokenNum">
                     <div class="numLeft">
-                        <el-input v-model="tokenVal2" placeholder="0" type="number" class="tokenVal"></el-input>
+                        <el-input v-model="tokenVal2" placeholder="0" type="number" class="tokenVal" @input="limitToken2"></el-input>
                     </div>
                     <div class="numRight">
                         <div class="numTip">balance</div>
@@ -158,11 +158,10 @@ export default {
     },
     methods: {
         async changeToken(val) {
-            await this.getAllBalance()
             if (val === 1) {
-                this.$refs.changeToken.show1(this.token1, this.token2, this.allToken)
+                this.$refs.changeToken.show1(this.token1, this.token2)
             } else {
-                this.$refs.changeToken.show2(this.token1, this.token2, this.allToken)
+                this.$refs.changeToken.show2(this.token1, this.token2)
             }
         },
         changeToken1(val) {
@@ -172,6 +171,12 @@ export default {
         changeToken2(val) {
             this.token2 = val.name
             this.balance2 = this.getShowBalance(val.balance)
+        },
+        limitToken1() {
+            this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+        },
+        limitToken2() {
+            this.tokenVal1 = this.getOtherCount(1, this.tokenVal2)
         },
         getImg(val) {
             for (const i in this.allToken) {
@@ -479,20 +484,6 @@ export default {
             if (newV !== 0.1) {
                 this.showAuto = false
             }
-        },
-        tokenVal1(newV, oldV) {
-            if (newV && Number(newV) !== 0 && (newV <= this.balance1)) {
-                this.tokenVal2 = this.getOtherCount(1, newV)
-            } else {
-                this.tokenVal2 = null
-            }
-        },
-        tokenVal2(newV, oldV) {
-            if (newV && Number(newV) !== 0) {
-                this.tokenVal1 = this.getOtherCount(2, newV)
-            } else {
-                this.tokenVal1 = null
-            }
         }
     }
 }
@@ -558,6 +549,9 @@ export default {
                 font-size: 20px;
                 font-weight: 500;
                 cursor: pointer;
+                .tokenCheck{
+                    min-width: 80px;
+                }
                 .tokenCheckIcon{
                     margin-left: 10px;
                     font-size: 32px;
