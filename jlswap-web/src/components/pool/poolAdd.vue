@@ -1,5 +1,6 @@
 <template>
     <div class="jlswap-poolAdd">
+        <div class="goBack" ><span @click="goBack">&lt; Go back</span></div>
         <div class="swapContainer">
             <div class="title">
                 <div class="tip">Add liquidity</div>
@@ -77,7 +78,7 @@
             </div>
         </div>
         <el-dialog
-            title="you will receive "
+            title="you will add "
             custom-class='confirmDia'
             top="5vh"
             :visible.sync="confirmExchange"
@@ -85,19 +86,25 @@
             <div class="confirmInfo">
                 <div class="confirmExc">
                     <div class="cofirmToken cofirmToken1">
-                        <div class='tokenLeft'>0.0001</div>
+                        <!-- <div class='tokenLeft'>0.0001</div> -->
                         <div class="tokenRight">
                             <div class="tokenImg"><img :src="getImg(token1)" alt=""></div>
                             <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
                         </div>
+                        <!-- <div class="tokenLeft">
+                            {{token1}}/{{token2}} Liquidity Pool
+                        </div> -->
                     </div>
                     <div class="cofirmToken cofirmToken2">
-                        <div class='tokenLeft'>Total tokens in {{ token1 }}/{{ token2 }} liquidity pool</div>
+                        <!-- <div class='tokenLeft'>Total tokens in {{ token1 }}/{{ token2 }} liquidity pool</div> -->
+                        <div class="tokenLeft">
+                            {{token1}}/{{token2}} Liquidity Pool
+                        </div>
                     </div>
                 </div>
-                <div class="tips">
+                <!-- <div class="tips">
                     The output is an estimated value if the price changes by more than {{settings}}%, your trade will be canceled
-                </div>
+                </div> -->
                 <div class='rateDiv'>
                     <div class='rateTip'>rate</div>
                     <div class='rateVal'>
@@ -114,8 +121,8 @@
                     <div class="right">{{tokenVal2}} {{token2}}</div>
                 </div>
                 <div class="confirmTip">
-                    <div class="left">Shares in the pool</div>
-                    <div class="right">0.000003023%</div>
+                    <div class="left">Tolerable Slippage</div>
+                    <div class="right">{{ settings }}%</div>
                 </div>
 
                 <div class="confirmBtn" @click="sureConfirm">confirm supply</div>
@@ -167,6 +174,9 @@ export default {
         }
     },
     methods: {
+        goBack() {
+            this.$emit('goback')
+        },
         show(token0, token1) {
             this.token1 = token0
             this.token2 = token1
@@ -210,9 +220,11 @@ export default {
         },
 
         async sureConfirm() {
+            this.confirmExchange = false
             const message1 = this.tokenVal1 + ' ' + this.token1
             const message2 = this.tokenVal2 + ' ' + this.token2
-            this.$refs.confirmWait.show(message1, message2)
+            const message = 'Supplying ' + message1 + ' and ' + message2
+            this.$refs.confirmWait.show(message)
             const web3 = new Web3(window.ethereum)
             let tokenAddress1
             let tokenAddress2
@@ -341,12 +353,11 @@ export default {
                     decimals2 = i.decimals
                 }
             }
-            const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
-            const tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
+            let tokenContract1
+            let tokenContract2
+            let allowance1
+            let allowance2
             const routerAddress = C.router_address
-            const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
-            const allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
-
             if (decimals1 === 18) {
                 getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
             } else {
@@ -358,14 +369,22 @@ export default {
                 getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
             }
             if (this.token1 === 'MATIC') { // erc20+native
+                tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
+                allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
                 if (Number(getAllowance2) > Number(allowance2)) {
                     await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
             } else if (this.token2 === 'MATIC') { // erc20+native
+                tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
+                allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
                 if (Number(getAllowance1) > Number(allowance1)) {
                     await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
             } else { // erc20+erc20
+                tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
+                tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
+                allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
+                allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
                 if (Number(getAllowance1) > Number(allowance1)) {
                     await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
@@ -391,6 +410,37 @@ export default {
                     }
                 }
             }
+        },
+        // 监听状态
+        getStatus(val) {
+            const web3 = new Web3(window.ethereum)
+            const that = this
+            const startTime = Date.now() // 记录开始时间
+            const timeout = 5 * 60 * 1000 // 设置超时时间为5分钟
+            web3.eth.getTransactionReceipt(val, (error, receipt) => {
+                if (error) {
+                    console.log(error)
+                } else {
+                    if (receipt === null) {
+                        const elapsedTime = Date.now() - startTime
+                        if (elapsedTime < timeout) {
+                            setTimeout(that.getStatus(val), 1000)
+                        } else {
+                            console.error('Transaction timed out')
+                        }
+                    } else if (receipt.status === 0) {
+                        that.$notify.error({
+                            title: 'Transaction fail'
+                        })
+                    } else {
+                        that.$notify({
+                            title: 'Transaction success',
+                            type: 'success'
+                        })
+                        that.init()
+                    }
+                }
+            })
         },
         // 保留5位小数
         getShowBalance(val) {
@@ -534,6 +584,8 @@ export default {
                 const web3 = new Web3(window.ethereum)
                 const fromAddress = await web3.eth.getAccounts()
                 this.fromAddress = fromAddress[0]
+                this.tokenVal1 = null
+                this.tokenVal2 = null
                 if (this.fromAddress) {
                     // 获取余额
                     this.loading = true
@@ -583,16 +635,26 @@ export default {
 <style lang="less" scoped>
 .jlswap-poolAdd{
     // height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    // display: flex;
+    // align-items: center;
+    // justify-content: center;
+    .goBack{
+        font-size: 26px;
+        color: #000;
+        margin-top: 8vh;
+        text-align: left;
+        span{
+            cursor: pointer;
+        }
+    }
     .swapContainer{
         width: 730px;
-        margin:10vh 0 50px;
+        margin:1vh 0 50px;
         // height: 550px;
         background: #F5F8FC;
         border-radius: 15px;
         padding:50px 40px 30px;
+        box-sizing: border-box;
         position: relative;
         .swapIcon{
             position: absolute;
@@ -793,7 +855,7 @@ export default {
             padding:0;
         }
         .confirmExc{
-            height: 200px;
+            height: 160px;
             background: #E9EEF4;
             border-radius: 16px;
             margin-top: 30px;
@@ -809,12 +871,12 @@ export default {
                 .tokenRight{
                     display: flex;
                     align-items: center;
-                    margin-left: 30px;
+                    // margin-left: 30px;
                     .tokenImg{
                         width: 54px;
                         height: 54px;
                         border-radius: 50%;
-                        margin-right: 5px;
+                        margin-right: 20px;
                         img{
                             width: 100%;
                             height: 100%;
@@ -835,6 +897,9 @@ export default {
                     word-break: break-word;
                     text-align: left;
                 }
+            }
+            .cofirmToken1{
+                justify-content: space-between;
             }
         }
         .confirmTip{

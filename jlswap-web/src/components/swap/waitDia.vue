@@ -9,7 +9,7 @@
             <div class="waitContent">
                 <div class="img" v-loading="loading"></div>
                 <div class="waitTip">Waiting for confirmation</div>
-                <div class="info">将{{msg1}}换成{{msg2}}</div>
+                <div class="info info1">{{ msg }}</div>
                 <div class="info">（Confirm the transaction in the wallet）</div>
             </div>
         </el-dialog>
@@ -22,14 +22,12 @@ export default {
         return {
             loading: true,
             confirmWait: false,
-            msg1: '',
-            msg2: ''
+            msg: ''
         }
     },
     methods: {
-        show(message1, message2) {
-            this.msg1 = message1
-            this.msg2 = message2
+        show(message) {
+            this.msg = message
             this.confirmWait = true
         },
         hide() {
@@ -71,6 +69,10 @@ export default {
             font-weight: 400;
             color: #000000;
             margin-top: 30px;
+        }
+        .info1{
+            font-weight: bold;
+            font-size: 24px;
         }
     }
     .el-loading-mask{

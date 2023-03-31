@@ -162,7 +162,7 @@ export default {
             showError: true,
             confirmExchange: false,
             network: utils.load('network'),
-            fromAddress: '',
+            fromAddress: utils.load('fromAddress'),
             allToken: tokenList,
             allLp: lpList,
             loading: false,
@@ -258,7 +258,8 @@ export default {
             this.confirmExchange = false
             const message1 = this.tokenVal1 + ' ' + this.token1
             const message2 = this.tokenVal2 + ' ' + this.token2
-            this.$refs.confirmWait.show(message1, message2)
+            const message = 'Swapping ' + message1 + ' for ' + message2
+            this.$refs.confirmWait.show(message)
             const web3 = new Web3(window.ethereum)
             const routerAddress = C.router_address
             const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
@@ -484,6 +485,7 @@ export default {
                             title: 'Transaction success',
                             type: 'success'
                         })
+                        that.init()
                     }
                 }
             })
@@ -503,9 +505,11 @@ export default {
         },
         connect() {
             if (window.ethereum) {
+                const that = this
                 window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
-                    this.fromAddress = res[0]
-                    this.connectWeb3()
+                    that.fromAddress = res[0]
+                    utils.put('fromAddress', that.fromAddress)
+                    that.connectWeb3()
                 })
             } else {
                 // 唤起失败，跳转metaMask
@@ -564,6 +568,7 @@ export default {
                 const that = this
                 window.ethereum.on('accountsChanged', function(res) {
                     that.fromAddress = res[0]
+                    utils.put('fromAddress', that.fromAddress)
                     that.init()
                 })
             }
@@ -729,6 +734,7 @@ export default {
                 const web3 = new Web3(window.ethereum)
                 const fromAddress = await web3.eth.getAccounts()
                 this.fromAddress = fromAddress[0]
+                utils.put('fromAddress', this.fromAddress)
                 if (this.fromAddress) {
                     const netId = await web3.eth.getChainId()
                     if (this.chainId === netId) {
@@ -800,6 +806,7 @@ export default {
         background: #F5F8FC;
         border-radius: 15px;
         padding:50px 40px 30px;
+        box-sizing: border-box;
         position: relative;
         .swapIcon{
             position: absolute;

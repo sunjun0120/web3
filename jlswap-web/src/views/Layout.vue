@@ -84,7 +84,7 @@ export default {
             all: '$0.00',
             surplus: '$0.00',
             network: utils.load('network'),
-            fromAddress: '',
+            fromAddress: utils.load('fromAddress'),
             chainId: 137 // Polygon Mainnet
         }
     },
@@ -92,9 +92,11 @@ export default {
         // 连接钱包
         connect() {
             if (window.ethereum) {
+                const that = this
                 window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
-                    this.fromAddress = res[0]
-                    this.connectWeb3()
+                    that.fromAddress = res[0]
+                    utils.put('fromAddress', that.fromAddress)
+                    that.connectWeb3()
                 })
             } else {
                 // 唤起失败，跳转metaMask
@@ -172,6 +174,7 @@ export default {
                 const that = this
                 window.ethereum.on('accountsChanged', function(res) {
                     that.fromAddress = res[0]
+                    utils.put('fromAddress', that.fromAddress)
                 })
             }
         },
@@ -199,6 +202,7 @@ export default {
                 const web3 = new Web3(window.ethereum)
                 const fromAddress = await web3.eth.getAccounts()
                 this.fromAddress = fromAddress[0]
+                utils.put('fromAddress', this.fromAddress)
                 const netId = await web3.eth.getChainId()
                 if (this.chainId === netId) {
                     this.network = true

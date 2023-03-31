@@ -55,7 +55,7 @@
             </div>
 
         </div>
-        <pool-add v-show="showAdd" ref='poolAdd'></pool-add>
+        <pool-add v-show="showAdd" ref='poolAdd' @goback="goback"></pool-add>
     </div>
 </template>
 <script>
@@ -73,7 +73,7 @@ export default {
     },
     data () {
         return {
-            fromAddress: '',
+            fromAddress: utils.load('fromAddress'),
             network: utils.load('network'),
             allToken: tokenList,
             allLp: lpList,
@@ -83,6 +83,9 @@ export default {
         }
     },
     methods: {
+        goback() {
+            this.showAdd = false
+        },
         addPool() {
             this.$refs.poolAdd.show('USDC', '')
             this.showAdd = true
@@ -200,9 +203,11 @@ export default {
         },
         connect() {
             if (window.ethereum) {
+                const that = this
                 window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
-                    this.fromAddress = res[0]
-                    this.connectWeb3()
+                    that.fromAddress = res[0]
+                    utils.put('fromAddress', that.fromAddress)
+                    that.connectWeb3()
                 })
             } else {
                 // 唤起失败，跳转metaMask
@@ -261,6 +266,7 @@ export default {
                 const that = this
                 window.ethereum.on('accountsChanged', function(res) {
                     that.fromAddress = res[0]
+                    utils.put('fromAddress', that.fromAddress)
                     if (!that.fromAddress) {
                         that.showAdd = false
                     }
@@ -292,6 +298,7 @@ export default {
                 const web3 = new Web3(window.ethereum)
                 const fromAddress = await web3.eth.getAccounts()
                 this.fromAddress = fromAddress[0]
+                utils.put('fromAddress', this.fromAddress)
                 if (this.fromAddress) {
                     const netId = await web3.eth.getChainId()
                     if (this.chainId === netId) {
@@ -327,6 +334,7 @@ export default {
         background: #F5F8FC;
         border-radius: 15px;
         padding:50px 40px 30px;
+        box-sizing: border-box;
         position: relative;
         display: flex;
         flex-direction: column;
