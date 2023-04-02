@@ -86,25 +86,17 @@
             <div class="confirmInfo">
                 <div class="confirmExc">
                     <div class="cofirmToken cofirmToken1">
-                        <!-- <div class='tokenLeft'>0.0001</div> -->
                         <div class="tokenRight">
                             <div class="tokenImg"><img :src="getImg(token1)" alt=""></div>
                             <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
                         </div>
-                        <!-- <div class="tokenLeft">
-                            {{token1}}/{{token2}} Liquidity Pool
-                        </div> -->
                     </div>
                     <div class="cofirmToken cofirmToken2">
-                        <!-- <div class='tokenLeft'>Total tokens in {{ token1 }}/{{ token2 }} liquidity pool</div> -->
                         <div class="tokenLeft">
                             {{token1}}/{{token2}} Liquidity Pool
                         </div>
                     </div>
                 </div>
-                <!-- <div class="tips">
-                    The output is an estimated value if the price changes by more than {{settings}}%, your trade will be canceled
-                </div> -->
                 <div class='rateDiv'>
                     <div class='rateTip'>rate</div>
                     <div class='rateVal'>
@@ -129,17 +121,11 @@
             </div>
         </el-dialog>
         <change-token ref="changeToken" @changeToken1='changeToken1' @changeToken2='changeToken2'></change-token>
-        <confirm-wait ref="confirmWait"></confirm-wait>
-        <confirm-success ref="confirmSuccess"></confirm-success>
-        <confirm-fail ref="confirmFail"></confirm-fail>
     </div>
 </template>
 <script>
 import Web3 from 'web3'
 import ChangeToken from './changeToken.vue'
-import ConfirmWait from '../swap/waitDia.vue'
-import ConfirmSuccess from '../swap/success.vue'
-import ConfirmFail from '../swap/fail.vue'
 import { tokenList } from '../../constants/tokens'
 import { lpList } from '../../constants/lpList'
 import { ERC20 } from '../../constants/abi/ERC20'
@@ -149,7 +135,7 @@ import C from '../../constants/contractAddress'
 export default {
     name: '',
     components: {
-        ChangeToken, ConfirmWait, ConfirmSuccess, ConfirmFail
+        ChangeToken
     },
     data () {
         return {
@@ -162,7 +148,6 @@ export default {
             swapE: false,
             swapE2: false,
             showAuto: false,
-            // showError: true,
             confirmExchange: false,
             fromAddress: '',
             allToken: tokenList,
@@ -206,7 +191,7 @@ export default {
             this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
         },
         limitToken2() {
-            this.tokenVal1 = this.getOtherCount(1, this.tokenVal2)
+            this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
         },
         getImg(val) {
             for (const i in this.allToken) {
@@ -224,7 +209,7 @@ export default {
             const message1 = this.tokenVal1 + ' ' + this.token1
             const message2 = this.tokenVal2 + ' ' + this.token2
             const message = 'Supplying ' + message1 + ' and ' + message2
-            this.$refs.confirmWait.show(message)
+            this.$emit('showWait', message)
             const web3 = new Web3(window.ethereum)
             let tokenAddress1
             let tokenAddress2
@@ -290,17 +275,17 @@ export default {
                     gasPrice: await web3.eth.getGasPrice()
                 }, function(error, hash) {
                     if (error) {
-                        that.$refs.confirmWait.hide()
+                        that.$emit('hideWait')
                         if (error.code !== 4001) {
-                            that.$refs.confirmFail.show(error)
+                            that.$emit('showFail', error)
                         } else {
-                            that.$refs.confirmFail.show('')
+                            that.$emit('showFail', '')
                         }
                     }
                     if (hash) {
                         that.init()
-                        that.$refs.confirmWait.hide()
-                        that.$refs.confirmSuccess.show(hash)
+                        that.$emit('hideWait')
+                        that.$emit('showSuccess', hash)
                         that.getStatus(hash)
                     }
                 })
@@ -314,17 +299,17 @@ export default {
                     gasPrice: await web3.eth.getGasPrice()
                 }, function(error, hash) {
                     if (error) {
-                        that.$refs.confirmWait.hide()
+                        that.$emit('hideWait')
                         if (error.code !== 4001) {
-                            that.$refs.confirmFail.show(error)
+                            that.$emit('showFail', error)
                         } else {
-                            that.$refs.confirmFail.show('')
+                            that.$emit('showFail', '')
                         }
                     }
                     if (hash) {
                         that.init()
-                        that.$refs.confirmWait.hide()
-                        that.$refs.confirmSuccess.show(hash)
+                        that.$emit('hideWait')
+                        that.$emit('showSuccess', hash)
                         that.getStatus(hash)
                     }
                 })
@@ -421,6 +406,7 @@ export default {
                 if (error) {
                     console.log(error)
                 } else {
+                    console.log(receipt)
                     if (receipt === null) {
                         const elapsedTime = Date.now() - startTime
                         if (elapsedTime < timeout) {
@@ -428,16 +414,16 @@ export default {
                         } else {
                             console.error('Transaction timed out')
                         }
-                    } else if (receipt.status === 0) {
-                        that.$notify.error({
-                            title: 'Transaction fail'
-                        })
-                    } else {
+                    } else if (receipt.status) {
                         that.$notify({
                             title: 'Transaction success',
                             type: 'success'
                         })
                         that.init()
+                    } else {
+                        that.$notify.error({
+                            title: 'Transaction fail'
+                        })
                     }
                 }
             })

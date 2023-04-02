@@ -37,38 +37,6 @@ export default {
     methods: {
         async show1(token1, token2) {
             this.tableData = this.allToken
-            // for (const i in this.tableData) {
-            //     if (token2 === 'USDT') {
-            //         if (this.tableData[i].name === 'USDC') {
-            //             this.tableData[i].disable = false
-            //         } else {
-            //             this.tableData[i].disable = true
-            //         }
-            //     } else if (token2 === 'USDC') {
-            //         if (this.tableData[i].name === 'USDC') {
-            //             this.tableData[i].disable = true
-            //         } else {
-            //             this.tableData[i].disable = false
-            //         }
-            //     } else if (token2 === 'WMATIC') {
-            //         if (this.tableData[i].name === 'USDC' || this.tableData[i].name === 'JLS') {
-            //             this.tableData[i].disable = false
-            //         } else {
-            //             this.tableData[i].disable = true
-            //         }
-            //     } else if (token2 === 'JLS') {
-            //         if (this.tableData[i].name === 'USDC' || this.tableData[i].name === 'WMATIC') {
-            //             this.tableData[i].disable = false
-            //         } else {
-            //             this.tableData[i].disable = true
-            //         }
-            //     } else {
-            //         this.tableData[i].disable = false
-            //     }
-            //     if (this.tableData[i].name === 'MATIC') {
-            //         this.tableData[i].disable = true
-            //     }
-            // }
             for (const i in this.tableData) {
                 if (this.tableData[i].name === token1 || this.tableData[i].name === token2) {
                     this.tableData[i].disable = true
@@ -90,36 +58,6 @@ export default {
         },
         async show2(token1, token2) {
             this.tableData = this.allToken
-            // for (const i in this.tableData) {
-            //     if (token1 === 'USDT') {
-            //         if (this.tableData[i].name === 'USDC') {
-            //             this.tableData[i].disable = false
-            //         } else {
-            //             this.tableData[i].disable = true
-            //         }
-            //     } else if (token1 === 'USDC') {
-            //         if (this.tableData[i].name === 'USDC') {
-            //             this.tableData[i].disable = true
-            //         } else {
-            //             this.tableData[i].disable = false
-            //         }
-            //     } else if (token1 === 'WMATIC') {
-            //         if (this.tableData[i].name === 'USDC' || this.tableData[i].name === 'JLS') {
-            //             this.tableData[i].disable = false
-            //         } else {
-            //             this.tableData[i].disable = true
-            //         }
-            //     } else if (token1 === 'JLS') {
-            //         if (this.tableData[i].name === 'USDC' || this.tableData[i].name === 'WMATIC') {
-            //             this.tableData[i].disable = false
-            //         } else {
-            //             this.tableData[i].disable = true
-            //         }
-            //     }
-            //     if (this.tableData[i].name === 'MATIC') {
-            //         this.tableData[i].disable = true
-            //     }
-            // }
             for (const i in this.tableData) {
                 if (this.tableData[i].name === token1 || this.tableData[i].name === token2) {
                     this.tableData[i].disable = true

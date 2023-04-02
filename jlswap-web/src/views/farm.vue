@@ -1,6 +1,7 @@
 <template>
     <div class="jlswap-farm">
-        <div class='top'>
+    pending
+        <!-- <div class='top'>
             <div class="left">
                 <div class="tip">Farms TVL</div>
                 <div class="num">$ 17,154,843</div>
@@ -15,15 +16,15 @@
                 <el-tab-pane label="All" name="All"><farm-table></farm-table></el-tab-pane>
                 <el-tab-pane label="Myfarms" name="Myfarms"><farm-table></farm-table></el-tab-pane>
             </el-tabs>
-        </div>
+        </div> -->
     </div>
 </template>
 <script>
-import FarmTable from '../components/farm/table.vue'
+// import FarmTable from '../components/farm/table.vue'
 export default {
     name: '',
     components: {
-        FarmTable
+        // FarmTable
     },
     data () {
         return {

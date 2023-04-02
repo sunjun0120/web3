@@ -476,16 +476,16 @@ export default {
                         } else {
                             console.error('Transaction timed out')
                         }
-                    } else if (receipt.status === 0) {
-                        that.$notify.error({
-                            title: 'Transaction fail'
-                        })
-                    } else {
+                    } else if (receipt.status) {
                         that.$notify({
                             title: 'Transaction success',
                             type: 'success'
                         })
                         that.init()
+                    } else {
+                        that.$notify.error({
+                            title: 'Transaction fail'
+                        })
                     }
                 }
             })

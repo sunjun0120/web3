@@ -1,6 +1,6 @@
 <template>
     <div class="jlswap-pool">
-        <div class='poolList-container' v-show="!showAdd">
+        <div class='poolList-container' v-show="showAdd===0">
             <div class="title">
                 <div class="tip">Standard AMM </div>
                 <el-tooltip popper-class='standardTip' :visible-arrow='false' effect="dark" content="Standard AMM：Liquidity providers earn 0.25% fee whenever a trade is made on JmlSwap proportional to their share of the pool. Fees are added to the pool and can be claimed anytime by withdrawing your liquidity" placement="right">
@@ -23,21 +23,21 @@
                                 <div class='infoDiv' v-show='!i.close'>
                                     <div class='info'>
                                         <div class='infoItem'>
-                                            <div class='infoLeft'>Pool {{i.from}}：</div>
-                                            <div class='infoRight'>{{ i.token0Balance }}</div>
+                                            <div class='infoLeft'>Pooled {{i.from}}：</div>
+                                            <div class='infoRight'>{{ getShowBalance(i.token0Balance) }}</div>
                                         </div>
                                         <div class='infoItem'>
-                                            <div class='infoLeft'>To pool {{i.to}}： </div>
-                                            <div class='infoRight'>{{ i.token1Balance }}</div>
+                                            <div class='infoLeft'>Pooled {{i.to}}： </div>
+                                            <div class='infoRight'>{{ getShowBalance(i.token1Balance) }}</div>
                                         </div>
                                         <div class='infoItem'>
                                             <div class='infoLeft'>Your proportion in the Liquidity Pool： </div>
-                                            <div class='infoRight'>{{i.proportion}}</div>
+                                            <div class='infoRight'>{{getProportion(i.proportion)}}</div>
                                         </div>
                                     </div>
                                     <div class='options'>
                                         <div class='optBtn add' @click="showAddDia(i.from,i.to)">Add to</div>
-                                        <div class='optBtn remove'>Remove</div>
+                                        <div class='optBtn remove' @click='showRemove(i.from,i.to,i.token0Balance,i.token1Balance,i.address)'>Remove</div>
                                     </div>
                                 </div>
                             </div>
@@ -45,7 +45,6 @@
                     </div>
                     <div class='addDiv'>
                         <div class='add' @click="addPool">Add</div>
-                        <!-- <div class='import'>Import</div> -->
                     </div>
                 </div>
                 <div class='connectWallet' v-else>Network Error</div>
@@ -55,7 +54,11 @@
             </div>
 
         </div>
-        <pool-add v-show="showAdd" ref='poolAdd' @goback="goback"></pool-add>
+        <pool-add v-show="showAdd===1" ref='poolAdd' @goback="goback" @showWait='showWait' @hideWait='hideWait' @showSuccess='showSuccess' @showFail='showFail'></pool-add>
+        <pool-remove v-show="showAdd===2" ref='poolRemove' @goback="goback" @showWait='showWait' @hideWait='hideWait' @showSuccess='showSuccess' @showFail='showFail'></pool-remove>
+        <confirm-wait ref="confirmWait"></confirm-wait>
+        <confirm-success ref="confirmSuccess"></confirm-success>
+        <confirm-fail ref="confirmFail"></confirm-fail>
     </div>
 </template>
 <script>
@@ -66,10 +69,14 @@ import { lpList } from '../constants/lpList'
 import { pairAbi } from '../constants/abi/pairAbi'
 import { ERC20 } from '../constants/abi/ERC20'
 import PoolAdd from '../components/pool/poolAdd.vue'
+import PoolRemove from '../components/pool/poolRemove.vue'
+import ConfirmWait from '../components/swap/waitDia.vue'
+import ConfirmSuccess from '../components/swap/success.vue'
+import ConfirmFail from '../components/swap/fail.vue'
 export default {
     name: '',
     components: {
-        PoolAdd
+        PoolAdd, PoolRemove, ConfirmWait, ConfirmSuccess, ConfirmFail
     },
     data () {
         return {
@@ -77,22 +84,39 @@ export default {
             network: utils.load('network'),
             allToken: tokenList,
             allLp: lpList,
-            showAdd: false,
+            showAdd: 0,
             loading: true,
             chainId: 137
         }
     },
     methods: {
         goback() {
-            this.showAdd = false
+            this.showAdd = 0
+            this.init()
         },
         addPool() {
             this.$refs.poolAdd.show('USDC', '')
-            this.showAdd = true
+            this.showAdd = 1
         },
         showAddDia(token0, token1) {
             this.$refs.poolAdd.show(token0, token1)
-            this.showAdd = true
+            this.showAdd = 1
+        },
+        showRemove(token0, token1, token0Balance, token1Balance, address) {
+            this.$refs.poolRemove.show(token0, token1, token0Balance, token1Balance, address, this.allToken)
+            this.showAdd = 2
+        },
+        showWait(val) {
+            this.$refs.confirmWait.show(val)
+        },
+        hideWait() {
+            this.$refs.confirmWait.hide()
+        },
+        showSuccess(val) {
+            this.$refs.confirmSuccess.show(val)
+        },
+        showFail(val) {
+            this.$refs.confirmFail.show(val)
         },
         getImg(val) {
             for (const i in this.allToken) {
@@ -161,6 +185,14 @@ export default {
                 }
             }
         },
+        getProportion(val) {
+            const percent = (val / 100).toFixed(6)
+            if (percent < 0.01) {
+                return '<0.01%'
+            } else {
+                return percent + '%'
+            }
+        },
         async initList() {
             const web3 = new Web3(window.ethereum)
             this.loading = true
@@ -169,30 +201,58 @@ export default {
                 this.$set(this.allLp[i], 'close', true)
                 const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
                 const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+                this.allLp[i].lpBalance = lpBalance
                 if (lpBalance > 0) {
                     this.$set(this.allLp[i], 'show', true)
                 } else {
                     this.$set(this.allLp[i], 'show', false)
                 }
-                // 获取池子里token额度
+                // 获取池子里token额度和兑换比例
                 const reserves = await pool.methods.getReserves().call()
                 const token0 = await pool.methods.token0().call()
                 const token1 = await pool.methods.token1().call()
                 const decimals0 = this.getTokenDecimals(token0)
                 const decimals1 = this.getTokenDecimals(token1)
-                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
-                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
-                this.allLp[i].token0Balance = this.getShowBalance(token0Balance)
-                this.allLp[i].token1Balance = this.getShowBalance(token1Balance)
                 const totalSupply = await pool.methods.totalSupply().call()
-                const percent = ((lpBalance / totalSupply) / 100).toFixed(6)
-                if (percent < 0.01) {
-                    this.allLp[i].proportion = '<0.01%'
-                } else {
-                    this.allLp[i].proportion = percent + '%'
-                }
+                this.allLp[i].proportion = lpBalance / totalSupply
+                const token0Balance = reserves._reserve0 * (lpBalance / totalSupply) / Math.pow(10, decimals0)
+                const token1Balance = reserves._reserve1 * (lpBalance / totalSupply) / Math.pow(10, decimals1)
+                this.allLp[i].token0Balance = token0Balance
+                this.allLp[i].token1Balance = token1Balance
+                const exchangeRate = token1Balance / token0Balance
+                const name0 = this.getTokenName(token0)
+                const name1 = this.getTokenName(token1)
+                this.getBaseVal(name0, name1, exchangeRate)
             }
             this.loading = false
+        },
+        getBaseVal(name0, name1, scale) {
+            for (const i of this.allToken) {
+                if (i.name === 'USDC') {
+                    i.baseVal = 1
+                }
+                if (name0 === 'USDC') {
+                    if (i.name === name1) {
+                        i.baseVal = scale
+                    }
+                }
+                if (name0 === 'WMATIC' && name1 === 'USDC') {
+                    if (i.name === name0) {
+                        i.baseVal = 1 / scale
+                    }
+                    if (i.name === 'MATIC') {
+                        i.baseVal = 1 / scale
+                    }
+                }
+            }
+        },
+        getTokenName(val) {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allToken) {
+                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
+                    return this.allToken[i].name
+                }
+            }
         },
         async openOrClose(index) {
             for (const i in this.allLp) {
@@ -268,7 +328,7 @@ export default {
                     that.fromAddress = res[0]
                     utils.put('fromAddress', that.fromAddress)
                     if (!that.fromAddress) {
-                        that.showAdd = false
+                        that.showAdd = 0
                     }
                     that.init()
                 })
@@ -283,7 +343,7 @@ export default {
                     if (val !== chainId) {
                         that.network = false
                         utils.put('network', false)
-                        that.showAdd = false
+                        that.showAdd = 0
                     } else {
                         that.network = true
                         utils.put('network', true)
