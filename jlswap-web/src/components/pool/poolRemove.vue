@@ -106,9 +106,10 @@
 import Web3 from 'web3'
 import utils from '../../utils/storage'
 import { lpList } from '../../constants/lpList'
-import { ERC20 } from '../../constants/abi/ERC20'
+// import { ERC20 } from '../../constants/abi/ERC20'
 import { pairAbi } from '../../constants/abi/pairAbi'
 import { routerAbi } from '../../constants/abi/routerAbi'
+import { tokenList } from '../../constants/tokens'
 import C from '../../constants/contractAddress'
 export default {
     name: '',
@@ -126,7 +127,7 @@ export default {
             showAuto: false,
             fromAddress: utils.load('fromAddress'),
             pairAddress: '',
-            allToken: [],
+            allToken: tokenList,
             allLp: lpList,
             showCofirmBtn: false,
             confirmExchange: false,
@@ -198,53 +199,18 @@ export default {
             }
         },
         async approve() {
-            // 审批，查询当前用户的erc20代币对于router的授权数量
+            // 审批，查询当前lp对于router的授权数量
             const web3 = new Web3(window.ethereum)
             const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
-            let tokenAddress1
-            let tokenAddress2
-            let decimals1
-            let decimals2
-            let getAllowance1
-            let getAllowance2
-            for (const i of this.allToken) {
-                if (i.name === this.token1) {
-                    tokenAddress1 = i.address
-                    decimals1 = i.decimals
-                }
-                if (i.name === this.token2) {
-                    tokenAddress2 = i.address
-                    decimals2 = i.decimals
-                }
-            }
             const scale = this.tokenVal / 100
-            const balance1 = this.token1Balance * scale
-            const balance2 = this.token2Balance * scale
-            if (decimals1 === 18) {
-                // getAllowance1 = web3.utils.toWei(this.balance1.toString(), 'ether')
-                getAllowance1 = balance1 * Math.pow(10, 18)
-            } else {
-                // getAllowance1 = web3.utils.toWei(this.balance1.toString(), 'lovelace')
-                getAllowance1 = balance1 * Math.pow(10, 6)
-            }
-            if (decimals2 === 18) {
-                // getAllowance2 = web3.utils.toWei(this.balance2.toString(), 'ether')
-                getAllowance2 = balance2 * Math.pow(10, 18)
-            } else {
-                // getAllowance2 = web3.utils.toWei(this.balance2.toString(), 'lovelace')
-                getAllowance2 = balance2 * Math.pow(10, 6)
-            }
-            // erc20+erc20
             const routerAddress = C.router_address
-            const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
-            const tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
-            const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
-            const allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
-            if (Number(getAllowance1) > Number(allowance1)) {
-                await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
-            }
-            if (Number(getAllowance2) > Number(allowance2)) {
-                await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
+            const pool = new web3.eth.Contract(pairAbi, this.pairAddress)
+            const lpAllowance = await pool.methods.allowance(this.fromAddress, routerAddress).call()
+            const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+            const liquidity = parseInt(lpBalance * scale)
+            const getLiquidity = web3.utils.toWei(liquidity.toString(), 'wei')
+            if (Number(getLiquidity) > Number(lpAllowance)) {
+                await pool.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
             }
             this.showCofirmBtn = true
         },
@@ -255,7 +221,7 @@ export default {
             this.confirmExchange = false
             const message1 = this.balance1 + ' ' + this.token1
             const message2 = this.balance2 + ' ' + this.token2
-            const message = 'Removing ' + message1 + ' and ' + message2
+            const message = 'You will receive ' + message1 + ' and ' + message2
             this.$emit('showWait', message)
             const web3 = new Web3(window.ethereum)
             let tokenAddress1
@@ -293,32 +259,29 @@ export default {
                 getAllowance2 = balance2 * Math.pow(10, 6)
             }
 
-            const getMinAllowance1 = Number(getAllowance1) * (1 - Number(this.settings) / 100)
-            const getMinAllowance2 = Number(getAllowance2) * (1 - Number(this.settings) / 100)
+            const getMinAllowance1 = parseInt(getAllowance1 * (1 - Number(this.settings) / 100))
+            const getMinAllowance2 = parseInt(getAllowance2 * (1 - Number(this.settings) / 100))
             const routerAddress = C.router_address
             const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
-            const amountAMin = web3.utils.toWei(parseInt(getMinAllowance1).toString(), 'wei')
-            const amountBMin = web3.utils.toWei(parseInt(getMinAllowance2).toString(), 'wei')
+            const amountAMin = web3.utils.toWei(getMinAllowance1.toString(), 'wei')
+            const amountBMin = web3.utils.toWei(getMinAllowance2.toString(), 'wei')
             const deadline = Math.floor(Date.now() / 1000) + 60 * 60// 1小时后过期
             const pool = new web3.eth.Contract(pairAbi, this.pairAddress)
             const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-            const liquidity = parseInt(lpBalance * scale * (1 - Number(this.settings) / 100))
-            const getLiquidity = liquidity
+            const liquidity = parseInt(lpBalance * scale)
+            const getLiquidity = web3.utils.toWei(liquidity.toString(), 'wei')
             const that = this
             if (this.token1 === 'WMATIC' || this.token2 === 'WMATIC') {
                 if (this.token1 === 'WMATIC') {
                     const amountTokenMin = amountBMin
                     const amountETHMin = amountAMin
                     const tx = await routerContract.methods.removeLiquidityETH(tokenAddress2, getLiquidity, amountTokenMin, amountETHMin, this.fromAddress, deadline)
+                    console.log(tx)
                     await web3.eth.sendTransaction({
                         from: this.fromAddress,
                         to: routerAddress,
-                        value: web3.utils.toHex(parseInt(getAllowance2)),
+                        gas: await tx.estimateGas({ from: this.fromAddress }),
                         data: tx.encodeABI(),
-                        gas: await tx.estimateGas({
-                            from: this.fromAddress,
-                            value: web3.utils.toHex(parseInt(getAllowance2))
-                        }),
                         gasPrice: await web3.eth.getGasPrice()
                     }, function(error, hash) {
                         if (error) {
@@ -340,15 +303,12 @@ export default {
                     const amountTokenMin = amountAMin
                     const amountETHMin = amountBMin
                     const tx = await routerContract.methods.removeLiquidityETH(tokenAddress1, getLiquidity, amountTokenMin, amountETHMin, this.fromAddress, deadline)
+                    // const value = web3.utils.toWei(parseInt(getAllowance2).toString(), 'wei')
                     await web3.eth.sendTransaction({
                         from: this.fromAddress,
                         to: routerAddress,
-                        value: web3.utils.toHex(parseInt(getAllowance1)),
                         data: tx.encodeABI(),
-                        gas: await tx.estimateGas({
-                            from: this.fromAddress,
-                            value: web3.utils.toHex(parseInt(getAllowance1))
-                        }),
+                        gas: await tx.estimateGas({ from: this.fromAddress }),
                         gasPrice: await web3.eth.getGasPrice()
                     }, function(error, hash) {
                         if (error) {
@@ -416,7 +376,7 @@ export default {
                             title: 'Transaction success',
                             type: 'success'
                         })
-                        // that.init()
+                        that.$emit('goback')
                     } else {
                         that.$notify.error({
                             title: 'Transaction fail'

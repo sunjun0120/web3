@@ -44,7 +44,7 @@
             <div class='swapIcon el-icon-plus'></div>
             <div class="token-container" v-loading='loading'>
                 <div class="token token1" @click="changeToken(2)">
-                    <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
+                    <div class="tokenImg"><img :src="getImg(token2)" alt="" v-show="token2"></div>
                     <div class="tokenCheck">
                         {{ token2 }}
                     </div>
@@ -239,8 +239,8 @@ export default {
             }
             const routerAddress = C.router_address
             const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
-            const amountAMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance1))).toString(), 'wei')
-            const amountBMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance2))).toString(), 'wei')
+            const amountAMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(this.tokenVal1))).toString(), 'wei')
+            const amountBMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(this.tokenVal2))).toString(), 'wei')
             const deadline = Math.floor(Date.now() / 1000) + 60 * 60// 1小时后过期
             const that = this
             if (this.token1 === 'MATIC' || this.token2 === 'MATIC') { // erc20+native
@@ -406,7 +406,7 @@ export default {
                 if (error) {
                     console.log(error)
                 } else {
-                    console.log(receipt)
+                    // console.log(receipt)
                     if (receipt === null) {
                         const elapsedTime = Date.now() - startTime
                         if (elapsedTime < timeout) {
