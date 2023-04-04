@@ -10,6 +10,16 @@ Vue.use(ElementUI)
 Vue.config.productionTip = false
 Vue.prototype.Web3 = Web3
 
+router.beforeEach((to, from, next) => {
+    if (to.fullPath === '/') {
+        next({
+            path: '/swap'
+        })
+    } else {
+        next()
+    }
+})
+
 new Vue({
     router,
     store,
