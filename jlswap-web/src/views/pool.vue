@@ -186,7 +186,12 @@ export default {
             }
         },
         getProportion(val) {
-            const percent = (val / 100).toFixed(6)
+            let percent
+            if ((val / 100).length > 6) {
+                percent = (val / 100).toFixed(6)
+            } else {
+                percent = (val / 100)
+            }
             if (percent < 0.01) {
                 return '<0.01%'
             } else {
@@ -201,6 +206,7 @@ export default {
                 this.$set(this.allLp[i], 'close', true)
                 const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
                 const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+                // console.log(lpBalance)
                 this.allLp[i].lpBalance = lpBalance
                 if (lpBalance > 0) {
                     this.$set(this.allLp[i], 'show', true)

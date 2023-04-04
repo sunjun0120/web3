@@ -36,7 +36,7 @@
                     </div>
                     <div class="numRight">
                         <div class="numTip">balance</div>
-                        <div class="numVal">{{ balance1 }}<span class="balanceVal">{{ token1 }}</span></div>
+                        <div class="numVal">{{ getShowBalance(balance1) }}<span class="balanceVal">{{ token1 }}</span></div>
                     </div>
                 </div>
             </div>
@@ -55,7 +55,7 @@
                     </div>
                     <div class="numRight">
                         <div class="numTip">balance</div>
-                        <div class="numVal">{{ balance2 }}<span class="balanceVal">{{ token2 }}</span></div>
+                        <div class="numVal">{{ getShowBalance(balance2) }}<span class="balanceVal">{{ token2 }}</span></div>
                     </div>
                 </div>
             </div>
@@ -180,13 +180,13 @@ export default {
         },
         changeToken1(val) {
             this.token1 = val.name
-            this.balance1 = this.getShowBalance(val.balance)
+            this.balance1 = val.balance
             this.tokenVal1 = null
             this.tokenVal2 = null
         },
         changeToken2(val) {
             this.token2 = val.name
-            this.balance2 = this.getShowBalance(val.balance)
+            this.balance2 = val.balance
             this.tokenVal1 = null
             this.tokenVal2 = null
         },
@@ -751,9 +751,9 @@ export default {
                         const b = this.token2
                         for (const i of this.allToken) {
                             if (i.name === a) {
-                                this.balance1 = this.getShowBalance(i.balance)
+                                this.balance1 = i.balance
                             } else if (i.name === b) {
-                                this.balance2 = this.getShowBalance(i.balance)
+                                this.balance2 = i.balance
                             }
                         }
                         this.loading = false

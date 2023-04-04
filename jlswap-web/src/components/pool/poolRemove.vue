@@ -219,8 +219,20 @@ export default {
         },
         async sureConfirm() {
             this.confirmExchange = false
-            const message1 = this.balance1 + ' ' + this.token1
-            const message2 = this.balance2 + ' ' + this.token2
+            let message1
+            let message2
+            if (this.token1 === 'WMATIC') {
+                message1 = this.balance1 + ' ' + 'MATIC'
+                message2 = this.balance2 + ' ' + this.token2
+            } else if (this.token2 === 'WMATIC') {
+                message1 = this.balance1 + ' ' + this.token1
+                message2 = this.balance2 + ' ' + 'MATIC'
+            } else {
+                message1 = this.balance1 + ' ' + this.token1
+                message2 = this.balance2 + ' ' + this.token2
+            }
+            // const message1 = this.balance1 + ' ' + this.token1
+            // const message2 = this.balance2 + ' ' + this.token2
             const message = 'You will receive ' + message1 + ' and ' + message2
             this.$emit('showWait', message)
             const web3 = new Web3(window.ethereum)
