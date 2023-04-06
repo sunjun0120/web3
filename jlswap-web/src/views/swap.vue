@@ -817,12 +817,12 @@ export default {
     align-items: center;
     justify-content: center;
     .swapContainer{
-        width: 600px;
+        width: 520px;
         margin:10vh 0 50px;
         // height: 550px;
         background: #F5F8FC;
         border-radius: 15px;
-        padding:45px 25px 25px;
+        padding: 30px 15px 20px;
         box-sizing: border-box;
         box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
         position: relative;
@@ -833,8 +833,8 @@ export default {
             background: #F5F8FC;
             border-radius: 14px;
             border: 2px solid #FFFFFF;
-            left: 96px;
-            top: 196px;
+            left: 85px;
+            top: 163px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -863,7 +863,7 @@ export default {
             display: flex;
             margin-top: 30px;
             .token{
-                height: 100px;
+                height: 80px;
                 width: 180px;
                 margin-right: 20px;
                 background: #F5D0A9;

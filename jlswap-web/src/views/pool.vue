@@ -394,13 +394,13 @@ export default {
     align-items: center;
     justify-content: center;
     .poolList-container{
-        width: 600px;
+        width: 520px;
         box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
         margin:10vh 0 50px;
         min-height: 350px;
         background: #F5F8FC;
         border-radius: 15px;
-        padding: 45px 25px 25px;
+        padding: 30px 15px 20px;
         box-sizing: border-box;
         position: relative;
         display: flex;

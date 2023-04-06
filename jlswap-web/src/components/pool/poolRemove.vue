@@ -450,12 +450,12 @@ export default {
         }
     }
     .swapContainer{
-        width: 600px;
+        width: 520px;
         box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
         margin:1vh 0 50px;
         background: #F5F8FC;
         border-radius: 15px;
-        padding:45px 25px 25px;
+        padding: 30px 15px 20px;
         box-sizing: border-box;
         position: relative;
         .title{
@@ -475,7 +475,7 @@ export default {
             display: flex;
             margin-top: 30px;
             .token{
-                height: 100px;
+                height: 80px;
                 width: 180px;
                 margin-right: 20px;
                 background: #F5D0A9;
@@ -511,7 +511,7 @@ export default {
                 background: #B3DFE4;
                 display: flex;
                 align-items: center;
-                padding:10px 20px;
+                padding:10px ;
                 .numLeft{
                     flex:1;
                     display: flex;
@@ -522,9 +522,9 @@ export default {
                 .numRight{
                     font-size: 16px;
                     .numTip{
-                        padding:15px;
+                        padding:10px;
                         font-size: 16px;
-                        border-radius: 15px;
+                        border-radius: 10px;
                         background: #E9EEF4;
                         color: #6D7278;
                         cursor: pointer;
