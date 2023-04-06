@@ -292,7 +292,7 @@ export default {
                     justify-content: center;
                     padding:10px 20px;
                     margin-left: 3.125vw;
-                    font-size: 20px;
+                    font-size: 16px;
                     font-weight: bold;
                     // line-height: 40px;
                     // margin-right: 30px;

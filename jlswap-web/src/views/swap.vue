@@ -170,7 +170,7 @@ export default {
             swapE: false,
             swapE2: false,
             showAuto: false,
-            showError: true,
+            // showError: true,
             confirmExchange: false,
             network: utils.load('network'),
             fromAddress: utils.load('fromAddress'),
@@ -205,7 +205,7 @@ export default {
             this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
         },
         limitToken2() {
-            this.tokenVal1 = this.getOtherCount(1, this.tokenVal2)
+            this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
         },
         getAllSwap(val) {
             if (val) {
@@ -788,7 +788,15 @@ export default {
             }
         }
     },
-
+    computed: {
+        showError() {
+            if (this.tokenVal1 && Number(this.tokenVal1) !== 0 && (this.tokenVal1 <= this.balance1) && this.tokenVal2) {
+                return false
+            } else {
+                return true
+            }
+        }
+    },
     mounted () {
         this.init()
         this.onChangeAccount()
@@ -799,14 +807,14 @@ export default {
             if (newV !== 0.1) {
                 this.showAuto = false
             }
-        },
-        tokenVal1(newV, oldV) {
-            if (newV && Number(newV) !== 0 && (newV <= this.balance1)) {
-                this.showError = false
-            } else {
-                this.showError = true
-            }
         }
+        // tokenVal1(newV, oldV) {
+        //     if (newV && Number(newV) !== 0 && (newV <= this.balance1)) {
+        //         this.showError = false
+        //     } else {
+        //         this.showError = true
+        //     }
+        // }
     }
 }
 </script>
