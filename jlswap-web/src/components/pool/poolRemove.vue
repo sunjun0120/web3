@@ -441,7 +441,7 @@ export default {
 <style lang="less" scoped>
 .jlswap-poolRemove{
     .goBack{
-        font-size: 26px;
+        font-size: 20px;
         color: #000;
         margin-top: 8vh;
         text-align: left;
@@ -455,7 +455,7 @@ export default {
         margin:1vh 0 50px;
         background: #F5F8FC;
         border-radius: 15px;
-        padding: 30px 15px 20px;
+        padding: 20px 15px 20px;
         box-sizing: border-box;
         position: relative;
         .title{
@@ -463,41 +463,42 @@ export default {
             justify-content: space-between;
             align-items: center;
             .tip{
-                font-size: 28px;
+                font-size: 20px;
                 font-weight: bold;
             }
             .setting{
-                font-size: 26px;
+                font-size: 18px;
                 cursor: pointer;
             }
         }
         .token-container{
             display: flex;
-            margin-top: 30px;
+            margin-top: 20px;
             .token{
-                height: 80px;
-                width: 165px;
+                height: 72px;
+                width: 145px;
                 margin-right: 15px;
                 background: #F5D0A9;
                 border-radius: 15px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 18px;
+                font-size: 16px;
                 color: #000000;
                 font-weight: bold;
                 .tokenCheck{
-                    min-width: 72px;
+                    min-width: 70px;
                 }
                 .tokenCheckIcon{
-                    margin-left: 5px;
+                    // margin-left: 5px;
                     font-size: 20px;
                 }
                 .tokenImg{
-                    width: 45px;
-                    height: 45px;
+                    width: 40px;
+                    height: 40px;
                     border-radius: 50%;
-                    margin-right: 13px;
+                    margin-right: 8px;
+                    flex-shrink: 0;
                     img{
                         width: 100%;
                         height: 100%;
@@ -520,7 +521,7 @@ export default {
                     font-size: 16px;
                 }
                 .numRight{
-                    font-size: 16px;
+                    font-size: 14px;
                     .numTip{
                         padding:10px;
                         font-size: 16px;
@@ -533,7 +534,7 @@ export default {
             }
         }
         .connectWallet{
-            height: 64px;
+            height: 52px;
             background: #CE2D32;
             border-radius: 15px;
             display: flex;
@@ -547,7 +548,7 @@ export default {
         }
         .showSwapBtn{
             .errorTip{
-                height: 64px;
+                height: 52px;
                 background: #E9EEF4;
                 border-radius: 15px;
                 display: flex;
@@ -568,7 +569,7 @@ export default {
                     padding:20px;
                     .exchangeTip{
                         text-align: left;
-                        font-size: 24px;
+                        font-size: 20px;
                         color: #000000;
                         font-weight: bold;
                     }
@@ -582,13 +583,13 @@ export default {
                             align-items: center;
                         }
                         .right{
-                            font-size: 20px;
+                            font-size: 16px;
                             color: #6D7278;
                             font-weight: 500;
                         }
                         .tokenImg{
-                            width: 45px;
-                            height: 45px;
+                            width: 40px;
+                            height: 40px;
                             border-radius: 50%;
                             img{
                                 width: 100%;
@@ -597,15 +598,15 @@ export default {
                             }
                         }
                         .tokenName{
-                            margin-left: 15px;
-                            font-size: 20px;
+                            margin-left: 10px;
+                            font-size: 16px;
                             color: #6D7278;
                             font-weight: 500;
                         }
                     }
                 }
                 .approveBtn{
-                    height: 64px;
+                    height: 52px;
                     background: #E02020;
                     border-radius: 15px;
                     display: flex;
@@ -628,10 +629,10 @@ export default {
             background-color:transparent;
             text-align: right;
             color: #0B0B0B;
-            font-size: 24px;
+            font-size: 20px;
             border:none;
-            height: 32px;
-            line-height: 32px;
+            height: 28px;
+            line-height: 28px;
             padding-left: 0;
             &::placeholder{
                 color: rgba(0,0,0,0.63);
@@ -642,7 +643,7 @@ export default {
         border-radius: 10px;
         background: #F5F8FC;
         padding:2.08vw 1.04vw;
-        width: 400px;
+        width: 430px;
         .el-dialog__header{
             padding:0;
             padding-left: 10px;
@@ -658,11 +659,11 @@ export default {
             padding:0;
         }
         .confirmExc{
-            height: 160px;
+            height: 130px;
             background: #E9EEF4;
             border-radius: 16px;
             margin-top: 30px;
-            padding:30px 10px;
+            padding:15px 10px;
             padding-right: 25px;
             box-sizing: border-box;
             display: flex;
@@ -676,8 +677,8 @@ export default {
                     display: flex;
                     align-items: center;
                     .tokenImg{
-                        width: 45px;
-                        height: 45px;
+                        width: 40px;
+                        height: 40px;
                         border-radius: 50%;
                         img{
                             width: 100%;
@@ -687,13 +688,13 @@ export default {
                     }
                     .tokenName{
                         margin-left: 15px;
-                        font-size: 24px;
+                        font-size: 20px;
                         color: #000000;
                         font-weight: 500;
                     }
                 }
                 .tokenRight{
-                    font-size: 24px;
+                    font-size: 20px;
                     color: #000000;
                     font-weight: 500;
                 }
@@ -703,7 +704,7 @@ export default {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 400;
             color: #000000;
             margin-top: 15px;
@@ -724,7 +725,7 @@ export default {
             }
         }
         .tips{
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 400;
             color: rgba(0,0,0,0.5);
             margin-top: 20px;
@@ -748,9 +749,12 @@ export default {
                 margin-bottom:15px;
                 text-align: right;
             }
+            .rateVal{
+                text-align: right;
+            }
         }
         .confirmBtn{
-            height: 64px;
+            height: 52px;
             background: #E02020;
             border-radius: 15px;
             color:#fff;
@@ -767,7 +771,7 @@ export default {
 </style>
 <style lang="less">
 .settingsPopper{
-    padding:35px 25px;
+    padding:20px;
     border-radius: 20px;
     .el-popover__title{
         font-size: 20px;
@@ -778,7 +782,7 @@ export default {
     .settingTip{
         font-size: 16px;
         color: #6D7278;
-        margin-bottom: 15px;
+        margin-bottom: 14px;
     }
     .settingsVal{
         // width: 316px;
@@ -788,8 +792,8 @@ export default {
             border: 1px solid #979797;
             padding-left: 20px;
             padding-right:30px;
-            height: 44px;
-            line-height: 44px;
+            height: 40px;
+            line-height: 40px;
             &::placeholder{
                 color: rgba(0,0,0,0.63);
             }
@@ -817,7 +821,7 @@ export default {
             cursor: pointer;
             display: flex;
             align-items: center;
-            height: 44px;
+            height: 40px;
             box-sizing: border-box;
         }
         .active{

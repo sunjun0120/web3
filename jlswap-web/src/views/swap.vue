@@ -102,14 +102,14 @@
                             <div class="tokenImg"><img :src="getImg(token1)" alt=""></div>
                             <div class="tokenName">{{ token1 }}</div>
                         </div>
-                        <div class="tokenRight">{{ tokenVal1 }}</div>
+                        <div class="tokenRight">{{ getShowBalance(tokenVal1) }}</div>
                     </div>
                     <div class="cofirmToken cofirmToken2">
                         <div class="tokenLeft">
                             <div class="tokenImg"><img :src="getImg(token2)" alt=""></div>
                             <div class="tokenName">{{ token2 }}</div>
                         </div>
-                        <div class="tokenRight">{{ tokenVal2 }}</div>
+                        <div class="tokenRight">{{ getShowBalance(tokenVal2) }}</div>
                     </div>
                 </div>
                 <div class="confirmTip">
@@ -822,24 +822,24 @@ export default {
         // height: 550px;
         background: #F5F8FC;
         border-radius: 15px;
-        padding: 30px 15px 20px;
+        padding: 20px 15px 20px;
         box-sizing: border-box;
         // box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
         position: relative;
         .swapIcon{
             position: absolute;
-            width: 45px;
-            height: 45px;
+            width: 36px;
+            height: 36px;
             background: #F5F8FC;
-            border-radius: 14px;
+            border-radius: 10px;
             border: 2px solid #FFFFFF;
-            left: 77px;
-            top: 163px;
+            left: 70px;
+            top: 124px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 22px;
             transition: all 0.5s;
             z-index: 2;
         }
@@ -851,42 +851,43 @@ export default {
             justify-content: space-between;
             align-items: center;
             .tip{
-                font-size: 28px;
+                font-size: 20px;
                 font-weight: bold;
             }
             .setting{
-                font-size: 26px;
+                font-size: 18px;
                 cursor: pointer;
             }
         }
         .token-container{
             display: flex;
-            margin-top: 30px;
+            margin-top: 20px;
             .token{
-                height: 80px;
-                width: 165px;
+                height: 72px;
+                width: 145px;
                 margin-right: 15px;
                 background: #F5D0A9;
                 border-radius: 15px;
                 display: flex;
                 align-items: center;
                 padding-left: 8px;
-                font-size: 18px;
+                font-size: 16px;
                 font-weight: 500;
                 cursor: pointer;
                 .tokenCheck{
-                    width:72px;
+                    width:70px;
                     font-weight: bold;
                 }
                 .tokenCheckIcon{
-                    margin-left: 5px;
+                    // margin-left: 5px;
                     font-size: 20px;
                 }
                 .tokenImg{
-                    width: 45px;
-                    height: 45px;
+                    width: 40px;
+                    height: 40px;
                     border-radius: 50%;
-                    margin-right: 13px;
+                    margin-right: 8px;
+                    flex-shrink: 0;
                     img{
                         width: 100%;
                         height: 100%;
@@ -939,7 +940,7 @@ export default {
             }
         }
         .connectWallet{
-            height: 64px;
+            height: 52px;
             background: #CE2D32;
             border-radius: 15px;
             display: flex;
@@ -953,7 +954,7 @@ export default {
         }
         .showSwapBtn{
             .errorTip{
-                height: 64px;
+                height: 52px;
                 background: #E9EEF4;
                 border-radius: 15px;
                 display: flex;
@@ -966,14 +967,14 @@ export default {
             }
             .approve{
                 .exchangeInfo{
-                    height: 64px;
+                    height: 52px;
                     background: #E9EEF4;
                     border-radius: 15px;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
                     color: #B5B2AB;
-                    font-size: 16px;
+                    font-size: 14px;
                     margin-top: 20px;
                     padding:0 20px;
                     .exchangeContent{
@@ -983,7 +984,7 @@ export default {
                             transform: rotate(90deg);
                             margin-left: 20px;
                             cursor: pointer;
-                            font-size: 20px;
+                            font-size: 16px;
                             transition: all 0.5s;
                             color:#448aff;
                         }
@@ -993,7 +994,7 @@ export default {
                     }
                 }
                 .approveBtn{
-                    height: 64px;
+                    height: 52px;
                     background: #E02020;
                     border-radius: 15px;
                     display: flex;
@@ -1015,10 +1016,10 @@ export default {
         .el-input__inner{
             background-color:transparent;
             color: #0B0B0B;
-            font-size: 24px;
+            font-size: 20px;
             border:none;
-            height: 32px;
-            line-height: 32px;
+            height: 28px;
+            line-height: 28px;
             padding-left: 0;
             &::placeholder{
                 color: rgba(0,0,0,0.63);
@@ -1029,7 +1030,7 @@ export default {
         border-radius: 10px;
         background: #F5F8FC;
         padding:2.08vw 1.04vw;
-        width: 400px;
+        width: 430px;
         .el-dialog__header{
             padding:0;
             padding-left: 10px;
@@ -1045,11 +1046,11 @@ export default {
             padding:0;
         }
         .confirmExc{
-            height: 160px;
+            height: 130px;
             background: #E9EEF4;
             border-radius: 16px;
             margin-top: 30px;
-            padding:20px 10px;
+            padding:15px 10px;
             padding-right: 25px;
             box-sizing: border-box;
             display: flex;
@@ -1063,9 +1064,10 @@ export default {
                     display: flex;
                     align-items: center;
                     .tokenImg{
-                        width: 45px;
-                        height: 45px;
+                        width: 40px;
+                        height: 40px;
                         border-radius: 50%;
+                        flex-shrink: 0;
                         img{
                             width: 100%;
                             height: 100%;
@@ -1074,13 +1076,14 @@ export default {
                     }
                     .tokenName{
                         margin-left: 15px;
-                        font-size: 24px;
+                        font-size: 20px;
                         color: #000000;
                         font-weight: bold;
+                        flex-shrink: 0;
                     }
                 }
                 .tokenRight{
-                    font-size: 24px;
+                    font-size: 20px;
                     color: #000000;
                     font-weight: bold;
                 }
@@ -1090,10 +1093,10 @@ export default {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 400;
             color: #000000;
-            margin-top: 30px;
+            margin-top: 20px;
             padding:0 10px;
             .right{
                 display: flex;
@@ -1101,7 +1104,7 @@ export default {
                     transform: rotate(90deg);
                     margin-left: 10px;
                     cursor: pointer;
-                    font-size: 20px;
+                    // font-size: 20px;
                     transition: all 0.5s;
                     color:#448aff;
                 }
@@ -1111,12 +1114,12 @@ export default {
             }
         }
         .tips{
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 400;
             color: rgba(0,0,0,0.5);
             margin-top: 30px;
             text-align: left;
-            line-height: 29px;
+            line-height: 20px;
             padding:0 10px;
             word-break: break-word;
             span{
@@ -1124,7 +1127,7 @@ export default {
             }
         }
         .confirmBtn{
-            height: 64px;
+            height: 52px;
             background: #E02020;
             border-radius: 15px;
             color:#fff;
@@ -1141,18 +1144,18 @@ export default {
 </style>
 <style lang="less">
 .settingsPopper{
-    padding:35px 25px;
-    border-radius: 20px;
+    padding:20px;
+    border-radius: 15px;
     .el-popover__title{
         font-size: 20px;
         font-weight: bold;
         color: #000000;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
     }
     .settingTip{
         font-size: 16px;
         color: #6D7278;
-        margin-bottom: 15px;
+        margin-bottom: 14px;
     }
     .settingsVal{
         // width: 316px;
@@ -1162,8 +1165,8 @@ export default {
             border: 1px solid #979797;
             padding-left: 20px;
             padding-right:30px;
-            height: 44px;
-            line-height: 44px;
+            height: 40px;
+            line-height: 40px;
             &::placeholder{
                 color: rgba(0,0,0,0.63);
             }
@@ -1191,7 +1194,8 @@ export default {
             cursor: pointer;
             display: flex;
             align-items: center;
-            height: 44px;
+            justify-content: center;
+            height: 40px;
             box-sizing: border-box;
         }
         .active{

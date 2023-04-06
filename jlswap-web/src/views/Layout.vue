@@ -1,7 +1,7 @@
 <template>
     <div class="jlswap-layout">
         <el-container class="home">
-            <el-header class="header" height="80px">
+            <el-header class="header" height="70px">
                 <div class="left">
                     <div class="logoImg">JLS</div>
                     <div class="logo">JLSwap</div>
@@ -272,7 +272,7 @@ export default {
                 font-size: 16px;
                 align-items: center;
                 .money{
-                    font-size: 20px;
+                    font-size: 16px;
                     color: #CE2D32;
                     font-weight: bold;
                     .moneyNum{
@@ -349,7 +349,7 @@ export default {
         margin-right: 0;
     }
     .el-dropdown-menu__item, .el-menu-item{
-        font-size: 24px;
+        font-size: 18px;
     }
     .el-menu--horizontal>.el-submenu .el-submenu__title:hover{
          background-color:#DAE7F9!important;

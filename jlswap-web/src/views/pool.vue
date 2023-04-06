@@ -400,7 +400,7 @@ export default {
         min-height: 350px;
         background: #F5F8FC;
         border-radius: 15px;
-        padding: 30px 15px 20px;
+        padding: 20px 15px 20px;
         box-sizing: border-box;
         position: relative;
         display: flex;
@@ -410,18 +410,18 @@ export default {
             justify-content: space-between;
             align-items: center;
             .tip{
-                font-size: 28px;
+                font-size: 20px;
                 font-weight: bold;
             }
             .setting{
-                font-size: 26px;
+                font-size: 18px;
                 cursor: pointer;
                 font-weight: bold;
             }
         }
         .userState{
             flex:1;
-            margin-top: 30px;
+            margin-top: 20px;
             .poolList{
                 min-height: 200px;
                 max-height: 260px;
@@ -431,22 +431,22 @@ export default {
                 .poolItem{
                     background: #B7E3E9;
                     border-radius: 8px;
-                    padding:20px 10px;
+                    padding:15px 10px;
                     margin-bottom: 15px;
                     .infoDiv{
-                        margin-top: 20px;
+                        margin-top: 15px;
                         padding:0 5px;
                         .info{
                             background: #FFFFFF;
                             border-radius: 17px;
-                            padding:15px 20px;
+                            padding:15px ;
                             box-sizing: border-box;
                             .infoItem{
                                 display: flex;
                                 align-items: center;
                                 justify-content: space-between;
                                 margin-bottom: 10px;
-                                font-size: 15px;
+                                font-size: 14px;
                                 color:#6D7278;
                             }
                             .infoItem:last-child{
@@ -457,11 +457,11 @@ export default {
                             display: flex;
                             align-items: center;
                             justify-content: space-around;
-                            margin-top: 20px;
+                            margin-top: 15px;
                             .optBtn{
                                 cursor: pointer;
                                 color: #E02020;
-                                font-size: 20px;
+                                font-size: 18px;
                                 font-weight: bold;
                             }
                         }
@@ -474,8 +474,8 @@ export default {
                     .left{
                         display: flex;
                         .img{
-                            width: 45px;
-                            height: 45px;
+                            width: 40px;
+                            height: 40px;
                             border-radius: 50%;
                             margin-right: 10px;
                             img{
@@ -486,6 +486,7 @@ export default {
                         }
                         .tokens{
                             font-size: 20px;
+                            line-height: 20px;
                             font-weight: bold;
                             color: #FFFFFF;
                             display: flex;
@@ -493,7 +494,7 @@ export default {
                         }
                     }
                     .right{
-                        font-size: 20px;
+                        font-size: 16px;
                         color:#fff;
                         cursor: pointer;
                         display: flex;
@@ -502,8 +503,8 @@ export default {
                     .right::after{
                         display: block;
                         content:'';
-                        width: 18px;
-                        height: 18px;
+                        width: 16px;
+                        height: 16px;
                         background: url('../assets/arrowDown.png') no-repeat;
                         background-size: 100% 100%;
                         margin-left: 10px;
@@ -520,7 +521,7 @@ export default {
                 margin-top: 20px;
                 .add{
                     flex:1;
-                    height: 64px;
+                    height: 52px;
                     background: #E02020;
                     border-radius: 15px;
                     display: flex;
@@ -535,7 +536,7 @@ export default {
                 .import{
                     flex:1;
                     margin-left: 5px;
-                    height: 64px;
+                    height: 52px;
                     border: 1px solid #E02020;
                     box-sizing: border-box;
                     border-radius: 15px;
@@ -553,7 +554,7 @@ export default {
             flex:1;
         }
         .connectWallet{
-            height: 64px;
+            height: 52px;
             background: #CE2D32;
             border-radius: 15px;
             display: flex;
@@ -570,10 +571,10 @@ export default {
 </style>
 <style lang="less">
 .standardTip{
-    width: 420px;
+    max-width: 360px;
     background: #E9EEF4!important;
     border-radius: 8px;
-    padding:20px;
+    padding:10px;
     font-size: 14px;
     color: #000000!important;
     line-height: 18px;

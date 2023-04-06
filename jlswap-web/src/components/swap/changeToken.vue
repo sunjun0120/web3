@@ -150,30 +150,30 @@ export default {
         .listContent{
             max-height: 460px;
             overflow-y: auto;
-            margin-top: 40px;
+            margin-top: 20px;
         }
         .item{
             display: flex;
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
-            border-radius: 16px;
+            border-radius: 15px;
             padding:10px 15px;
             padding-right: 30px;
             font-weight: 600;
             color: #000000;
-            font-size: 20px;
+            font-size: 18px;
             margin-top: 3px;
             .left{
                 display:flex;
                 align-items: center;
             }
             .img{
-                width: 45px;
-                height: 45px;
+                width: 40px;
+                height: 40px;
                 // background: #C4C2C2;
                 border-radius: 50%;
-                margin-right: 15px;
+                margin-right: 10px;
                 img{
                     width: 100%;
                     height: 100%;
