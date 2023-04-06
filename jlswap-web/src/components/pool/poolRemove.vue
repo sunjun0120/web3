@@ -476,22 +476,22 @@ export default {
             margin-top: 30px;
             .token{
                 height: 80px;
-                width: 180px;
-                margin-right: 20px;
+                width: 165px;
+                margin-right: 15px;
                 background: #F5D0A9;
                 border-radius: 15px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 20px;
+                font-size: 18px;
                 color: #000000;
                 font-weight: bold;
                 .tokenCheck{
-                    min-width: 80px;
+                    min-width: 72px;
                 }
                 .tokenCheckIcon{
                     margin-left: 5px;
-                    font-size: 26px;
+                    font-size: 20px;
                 }
                 .tokenImg{
                     width: 45px;
@@ -517,7 +517,7 @@ export default {
                     display: flex;
                     align-items: center;
                     color: #0B0B0B;
-                    font-size: 26px;
+                    font-size: 16px;
                 }
                 .numRight{
                     font-size: 16px;
@@ -628,7 +628,7 @@ export default {
             background-color:transparent;
             text-align: right;
             color: #0B0B0B;
-            font-size: 26px;
+            font-size: 24px;
             border:none;
             height: 32px;
             line-height: 32px;

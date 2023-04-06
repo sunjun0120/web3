@@ -337,9 +337,9 @@ export default {
     }
     .el-menu--horizontal>.el-menu-item{
         height: 50px;
-        // line-height: 60px;
+        line-height: 50px;
         margin-right: 3.125vw;
-        border-radius: 20px;
+        border-radius: 15px;
         border-bottom:none;
         border-bottom-color: transparent!important;
         display: flex;

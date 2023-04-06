@@ -833,7 +833,7 @@ export default {
             background: #F5F8FC;
             border-radius: 14px;
             border: 2px solid #FFFFFF;
-            left: 85px;
+            left: 77px;
             top: 163px;
             cursor: pointer;
             display: flex;
@@ -864,23 +864,23 @@ export default {
             margin-top: 30px;
             .token{
                 height: 80px;
-                width: 180px;
-                margin-right: 20px;
+                width: 165px;
+                margin-right: 15px;
                 background: #F5D0A9;
                 border-radius: 15px;
                 display: flex;
                 align-items: center;
                 padding-left: 8px;
-                font-size: 20px;
+                font-size: 18px;
                 font-weight: 500;
                 cursor: pointer;
                 .tokenCheck{
-                    width:80px;
+                    width:72px;
                     font-weight: bold;
                 }
                 .tokenCheckIcon{
                     margin-left: 5px;
-                    font-size: 26px;
+                    font-size: 20px;
                 }
                 .tokenImg{
                     width: 45px;
@@ -912,8 +912,8 @@ export default {
                 }
                 .numRight{
                     color: #FFFDFD;
-                    font-size: 16px;
-                    line-height: 22px;
+                    font-size: 14px;
+                    line-height: 20px;
                     font-weight: 500;
                     align-self: flex-end;
                     .numTip{
@@ -922,8 +922,8 @@ export default {
                 }
                 .numVal{
                     color: #FFFDFD;
-                    font-size: 16px;
-                    line-height: 22px;
+                    font-size: 14px;
+                    line-height: 20px;
                     font-weight: 500;
                     // margin-top: 4px;
                     text-align: right;
@@ -1015,7 +1015,7 @@ export default {
         .el-input__inner{
             background-color:transparent;
             color: #0B0B0B;
-            font-size: 26px;
+            font-size: 24px;
             border:none;
             height: 32px;
             line-height: 32px;
