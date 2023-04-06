@@ -817,14 +817,14 @@ export default {
     align-items: center;
     justify-content: center;
     .swapContainer{
-        width: 520px;
+        width: 480px;
         margin:10vh 0 50px;
         // height: 550px;
         background: #F5F8FC;
         border-radius: 15px;
         padding: 30px 15px 20px;
         box-sizing: border-box;
-        box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
+        // box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
         position: relative;
         .swapIcon{
             position: absolute;
@@ -915,6 +915,7 @@ export default {
                     font-size: 16px;
                     line-height: 22px;
                     font-weight: 500;
+                    align-self: flex-end;
                     .numTip{
                         text-align: right;
                     }
@@ -924,7 +925,7 @@ export default {
                     font-size: 16px;
                     line-height: 22px;
                     font-weight: 500;
-                    margin-top: 4px;
+                    // margin-top: 4px;
                     text-align: right;
                     .balanceVal{
                         margin-left: 6px;
@@ -1028,7 +1029,7 @@ export default {
         border-radius: 10px;
         background: #F5F8FC;
         padding:2.08vw 1.04vw;
-        width: 480px;
+        width: 400px;
         .el-dialog__header{
             padding:0;
             padding-left: 10px;

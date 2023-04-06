@@ -132,7 +132,7 @@ export default {
         border-radius: 10px;
         background: #F5F8FC;
         padding:2.08vw 1.04vw;
-        width: 480px;
+        width: 400px;
         .el-dialog__header{
             padding:0;
             padding-left: 10px;

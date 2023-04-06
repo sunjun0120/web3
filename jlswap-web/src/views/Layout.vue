@@ -365,6 +365,7 @@ export default {
         border-bottom-color: transparent!important;
         position: relative;
         background-color:#DAE7F9!important;
+        font-weight: bold;
     }
     .el-menu--horizontal .el-menu-item:focus,.el-menu--horizontal .el-menu-item:hover{
         background-color:#DAE7F9!important;

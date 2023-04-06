@@ -450,8 +450,8 @@ export default {
         }
     }
     .swapContainer{
-        width: 520px;
-        box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
+        width: 480px;
+        // box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
         margin:1vh 0 50px;
         background: #F5F8FC;
         border-radius: 15px;
@@ -642,7 +642,7 @@ export default {
         border-radius: 10px;
         background: #F5F8FC;
         padding:2.08vw 1.04vw;
-        width: 480px;
+        width: 400px;
         .el-dialog__header{
             padding:0;
             padding-left: 10px;

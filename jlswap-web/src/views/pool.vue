@@ -394,8 +394,8 @@ export default {
     align-items: center;
     justify-content: center;
     .poolList-container{
-        width: 520px;
-        box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
+        width: 480px;
+        // box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
         margin:10vh 0 50px;
         min-height: 350px;
         background: #F5F8FC;
