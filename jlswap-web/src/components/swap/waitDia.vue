@@ -41,7 +41,7 @@ export default {
     border-radius: 10px;
     background: #F5F8FC;
     padding:2.08vw 1.04vw;
-    width: 590px;
+    width: 520px;
     .el-dialog__header{
         padding:0;
     }
@@ -49,7 +49,7 @@ export default {
         padding:0;
     }
     .waitContent{
-        padding-bottom: 40px;
+        padding-bottom: 10px;
         .img{
             width: 100px;
             height: 100px;
@@ -59,24 +59,21 @@ export default {
             margin-top: 40px;
         }
         .waitTip{
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 600;
             color: #000000;
             margin-top: 20px;
         }
         .info{
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 400;
             color: #000000;
             margin-top: 30px;
         }
         .info1{
             font-weight: bold;
-            font-size: 24px;
+            font-size: 20px;
         }
-    }
-    .el-loading-mask{
-        background-color:#F5F8FC;
     }
 }
 </style>

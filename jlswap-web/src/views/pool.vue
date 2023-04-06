@@ -394,12 +394,13 @@ export default {
     align-items: center;
     justify-content: center;
     .poolList-container{
-        width: 730px;
+        width: 600px;
+        box-shadow: 0px 1px 1px 1px rgba(0,0,0,0.5);
         margin:10vh 0 50px;
         min-height: 350px;
         background: #F5F8FC;
         border-radius: 15px;
-        padding:50px 40px 30px;
+        padding: 45px 25px 25px;
         box-sizing: border-box;
         position: relative;
         display: flex;
@@ -420,11 +421,12 @@ export default {
         }
         .userState{
             flex:1;
+            margin-top: 30px;
             .poolList{
-                min-height: 350px;
-                max-height: 410px;
+                min-height: 200px;
+                max-height: 260px;
                 overflow-y: auto;
-                padding:30px 0 0;
+                // padding:30px 0 0;
                 box-sizing: border-box;
                 .poolItem{
                     background: #B7E3E9;
@@ -472,10 +474,10 @@ export default {
                     .left{
                         display: flex;
                         .img{
-                            width: 54px;
-                            height: 54px;
+                            width: 45px;
+                            height: 45px;
                             border-radius: 50%;
-                            margin-right: 15px;
+                            margin-right: 10px;
                             img{
                                 width: 100%;
                                 height: 100%;
@@ -518,7 +520,7 @@ export default {
                 margin-top: 20px;
                 .add{
                     flex:1;
-                    height: 70px;
+                    height: 64px;
                     background: #E02020;
                     border-radius: 15px;
                     display: flex;
@@ -526,14 +528,14 @@ export default {
                     justify-content: center;
                     cursor: pointer;
                     color:#fff;
-                    font-size: 20px;
+                    font-size: 18px;
                     font-weight: 500;
                    // margin-right: 5px;
                 }
                 .import{
                     flex:1;
                     margin-left: 5px;
-                    height: 70px;
+                    height: 64px;
                     border: 1px solid #E02020;
                     box-sizing: border-box;
                     border-radius: 15px;
@@ -542,7 +544,7 @@ export default {
                     justify-content: center;
                     cursor: pointer;
                     color: #000000;
-                    font-size: 20px;
+                    font-size: 18px;
                     font-weight: 500;
                 }
             }
@@ -551,7 +553,7 @@ export default {
             flex:1;
         }
         .connectWallet{
-            height: 70px;
+            height: 64px;
             background: #CE2D32;
             border-radius: 15px;
             display: flex;
@@ -559,7 +561,7 @@ export default {
             justify-content: center;
             cursor: pointer;
             color:#fff;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 500;
             margin-top: 200px;
         }
@@ -571,8 +573,8 @@ export default {
     width: 420px;
     background: #E9EEF4!important;
     border-radius: 8px;
-    padding:20px 20px;
-    font-size: 16px;
+    padding:20px;
+    font-size: 14px;
     color: #000000!important;
     line-height: 18px;
     box-sizing: border-box;

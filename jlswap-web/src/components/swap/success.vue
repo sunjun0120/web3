@@ -40,7 +40,7 @@ export default {
     border-radius: 10px;
     background: #F5F8FC;
     padding:2.08vw 1.04vw;
-    width: 590px;
+    width: 520px;
     .el-dialog__header{
         padding:0;
     }
@@ -48,7 +48,7 @@ export default {
         padding:0;
     }
     .waitContent{
-        padding-bottom: 40px;
+        padding-bottom: 10px;
         .img{
             width: 72px;
             height: 72px;
@@ -59,13 +59,13 @@ export default {
             margin-top: 40px;
         }
         .waitTip{
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 600;
             color: #000000;
             margin-top: 20px;
         }
         .info{
-            font-size: 20px;
+            font-size: 26px;
             font-weight: 400;
             color: #000000;
             margin-top: 30px;

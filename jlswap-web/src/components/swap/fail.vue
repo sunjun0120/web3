@@ -3,7 +3,7 @@
         <el-dialog
             title=""
             custom-class='confirmFail'
-            top="15vh"
+            top="20vh"
             :visible.sync="confirmWait"
         >
             <div class="waitContent">
@@ -36,7 +36,7 @@ export default {
     border-radius: 10px;
     background: #F5F8FC;
     padding:2.08vw 1.04vw;
-    width: 590px;
+    width: 520px;
     .el-dialog__header{
         padding:0;
     }
@@ -44,7 +44,7 @@ export default {
         padding:0;
     }
     .waitContent{
-        padding-bottom: 40px;
+        padding-bottom:10px;
         .img{
             width: 72px;
             height: 72px;
@@ -52,16 +52,16 @@ export default {
             background-size: 100% 100%;
             // border-radius: 50%;
             margin:0 auto;
-            margin-top: 40px;
+            margin-top: 20px;
         }
         .waitTip{
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 600;
             color: #000000;
             margin-top: 20px;
         }
         .info{
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 400;
             color: #000000;
             margin-top: 30px;

@@ -10,7 +10,7 @@
         <div class='item' v-for='i,index in 4' :key='index'>
             <div class='itemInfo' >
                 <div class='itemName leftName'>
-                    <div class='img'><img :src="getImg('JLST')" alt=""></div>
+                    <div class='img'><img :src="getImg('JLS')" alt=""></div>
                     <div class='img'><img :src="getImg('USDC')" alt=""></div>
                     <div class='tokens'>JLS / USDC</div>
                 </div>
@@ -18,7 +18,7 @@
                 <div class='itemName third'>
                     <div class='tokenInfoDiv'>
                         <div class='tokenInfo'>
-                            <div class='tokenImg'><img :src="getImg('JLST')" alt=""></div>
+                            <div class='tokenImg'><img :src="getImg('JLS')" alt=""></div>
                             <div class='infoDesc'>4,807 JLS/day</div>
                         </div>
                         <div class='tokenInfo'>
@@ -117,7 +117,7 @@ export default {
             .itemInfo{
                 display: flex;
                 align-items: center;
-                height: 135px;
+                height: 100px;
                 cursor: pointer;
                 padding:0 40px 0 10px;
             }
@@ -130,8 +130,8 @@ export default {
                 display: flex;
                 align-items: center;
                 .img{
-                    width: 54px;
-                    height: 54px;
+                    width: 45px;
+                    height: 45px;
                     border-radius: 50%;
                     margin-left:15px;
                     img{

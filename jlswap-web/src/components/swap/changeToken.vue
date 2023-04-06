@@ -132,7 +132,7 @@ export default {
         border-radius: 10px;
         background: #F5F8FC;
         padding:2.08vw 1.04vw;
-        width: 590px;
+        width: 480px;
         .el-dialog__header{
             padding:0;
             padding-left: 10px;
@@ -162,18 +162,18 @@ export default {
             padding-right: 30px;
             font-weight: 600;
             color: #000000;
-            font-size: 26px;
+            font-size: 20px;
             margin-top: 3px;
             .left{
                 display:flex;
                 align-items: center;
             }
             .img{
-                width: 54px;
-                height: 54px;
+                width: 45px;
+                height: 45px;
                 // background: #C4C2C2;
                 border-radius: 50%;
-                margin-right: 30px;
+                margin-right: 15px;
                 img{
                     width: 100%;
                     height: 100%;
