@@ -39,10 +39,10 @@ export default {
 .jlswap-farm{
     .top{
         display: flex;
-        margin-top: 7.87vh;
-        margin-bottom: 7.87vh;
+        margin-top: 40px;
+        margin-bottom: 60px;
         .tip{
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 500;
             color: rgba(0,0,0,0.85);
             font-weight: bold;
@@ -50,8 +50,8 @@ export default {
         .num{
             font-weight: 500;
             color: #E02020;
-            font-size: 32px;
-            margin-top: 25px;
+            font-size: 24px;
+            margin-top: 15px;
             font-weight: bold;
         }
         .left{
@@ -84,17 +84,18 @@ export default {
                 align-items: center;
             }
             .el-tabs__item{
-                height: 50px;
-                padding:10px 30px;
-                font-size: 20px;
+                height: 40px;
+                padding:10px 20px;
+                font-size: 18px;
                 color: rgba(0,0,0,0.85);
                 display: flex;
                 align-items: center;
-                border-radius: 25px;
-                margin-right: 5px;
+                border-radius: 20px;
+                margin-right: 15px;
             }
             .el-tabs__item.is-active{
                 background: #DAE7F9;
+                font-weight: bold;
             }
             .el-tabs__active-bar{
                 height: 0;
