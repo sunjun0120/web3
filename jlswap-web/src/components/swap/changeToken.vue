@@ -22,13 +22,14 @@
 import Web3 from 'web3'
 import { ERC20 } from '../../constants/abi/ERC20'
 import { tokenList } from '../../constants/tokens'
+import { chainId } from '../../constants/common'
 export default {
     name: '',
     data () {
         return {
             tokenListShow: false,
             fromAddress: '',
-            chainId: 137,
+            chainId: chainId,
             tableData: [],
             allToken: tokenList,
             switchToken: 1,

@@ -64,6 +64,7 @@
 <script>
 import utils from '../utils/storage'
 import Web3 from 'web3'
+import { chainId } from '../constants/common'
 import { tokenList } from '../constants/tokens'
 import { lpList } from '../constants/lpList'
 import { pairAbi } from '../constants/abi/pairAbi'
@@ -86,7 +87,7 @@ export default {
             allLp: lpList,
             showAdd: 0,
             loading: true,
-            chainId: 137
+            chainId: chainId
         }
     },
     methods: {

@@ -136,6 +136,7 @@
 <script>
 import Web3 from 'web3'
 import ChangeToken from './changeToken.vue'
+import { chainId } from '../../constants/common'
 import { tokenList } from '../../constants/tokens'
 import { lpList } from '../../constants/lpList'
 import { ERC20 } from '../../constants/abi/ERC20'
@@ -165,7 +166,7 @@ export default {
             loading: false,
             showCofirmBtn: false,
             settings: 0.5,
-            chainId: 137
+            chainId: chainId
         }
     },
     methods: {

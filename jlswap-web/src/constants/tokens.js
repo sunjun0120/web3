@@ -28,12 +28,6 @@ export const tokenList = [
         address: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f',
         decimals: 6
     },
-    // {
-    //     name: 'JLS',
-    //     icon: JLS,
-    //     address: '',
-    //     decimals: 18
-    // },
     {
         name: 'JLS',
         desc: 'test JLST',

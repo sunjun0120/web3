@@ -142,6 +142,7 @@
 <script>
 import Web3 from 'web3'
 import utils from '../utils/storage'
+import { chainId } from '../constants/common'
 import ConfirmWait from '../components/swap/waitDia.vue'
 import ConfirmSuccess from '../components/swap/success.vue'
 import ConfirmFail from '../components/swap/fail.vue'
@@ -178,7 +179,7 @@ export default {
             allLp: lpList,
             loading: false,
             settings: 0.5,
-            chainId: 137
+            chainId: chainId
         }
     },
     methods: {

@@ -8,63 +8,65 @@
         <div class="options"></div>
     </div>
     <div class='content'>
-        <div class='item' v-for='i,index in allFarm' :key='index'>
-            <div class='itemInfo' >
-                <div class='itemName leftName'>
-                    <div class='img'><img :src="getImg(i.from)" alt=""></div>
-                    <div class='img'><img :src="getImg(i.to)" alt=""></div>
-                    <div class='tokens'>{{i.from}} / {{ i.to }}</div>
-                </div>
-                <div class='itemName second'>$34.10K</div>
-                <div class='itemName third'>
-                    <div class='tokenInfoDiv'>
-                        <div class='tokenInfo'>
-                            <div class='tokenImg'><img :src="getImg(i.from)" alt=""></div>
-                            <div class='infoDesc'>4,807 JLS/day</div>
-                        </div>
-                        <div class='tokenInfo'>
-                            <div class='tokenImg'><img :src="getImg(i.to)" alt=""></div>
-                            <div class='infoDesc'>2018 USDC/day</div>
+        <div class='itemDiv' v-for='i,index in allLp' :key='index'>
+            <div class="item" v-if="i.stakeToken">
+                <div class='itemInfo' >
+                    <div class='itemName leftName'>
+                        <div class='img'><img :src="getImg(i.from)" alt=""></div>
+                        <div class='img'><img :src="getImg(i.to)" alt=""></div>
+                        <div class='tokens'>{{i.from}} / {{ i.to }}</div>
+                    </div>
+                    <div class='itemName second'>${{ i.farmValue }}</div>
+                    <div class='itemName third'>
+                        <div class='tokenInfoDiv'>
+                            <div class='tokenInfo'>
+                                <div class='tokenImg'><img :src="getImg('JLS')" alt=""></div>
+                                <div class='infoDesc'>{{ i.rewardRate }} JLS/day</div>
+                            </div>
+                            <!-- <div class='tokenInfo'>
+                                <div class='tokenImg'><img :src="getImg(i.to)" alt=""></div>
+                                <div class='infoDesc'>2018 {{i.to}}/day</div>
+                            </div> -->
                         </div>
                     </div>
+                    <div class='itemName rightName'>{{ i.apr }}</div>
+                    <div class="optionsBtn">
+                        <div :class="i.close?'manage el-icon-arrow-down':'manage el-icon-arrow-down arrowUp'" @click="openOrClose(index)"></div>
+                    </div>
                 </div>
-                <div class='itemName rightName'>20%</div>
-                <div class="optionsBtn">
-                    <div :class="i.close?'manage el-icon-arrow-down':'manage el-icon-arrow-down arrowUp'" @click="openOrClose(index)"></div>
-                </div>
-            </div>
-            <div class='options' v-show='!i.close'>
-                <div class='farmContentDiv' v-if="fromAddress">
-                    <div class="farmContent" v-if="network">
-                        <div class='farmLeft'>
-                            <div class='balanceTip'>Available: 0LP（$0.00）</div>
-                            <div class='pledgeInputDiv'>
-                                <div class='pledge'>
-                                    <el-input v-model="pledgeVal" placeholder="0.0" type="number" class='pledgeInput'></el-input>
+                <div class='optionsContainer' v-show='!i.close'>
+                    <div class='farmContentDiv' v-if="fromAddress">
+                        <div class="farmContent" v-if="network">
+                            <div class='farmLeft'>
+                                <div class='balanceTip'>Available: {{getNum(i.lpBalance)}} LP（${{getTwoPrice(i.lpBalanceValue)}}）</div>
+                                <div class='pledgeInputDiv'>
+                                    <div class='pledge'>
+                                        <el-input v-model="i.pledgeVal" placeholder="0.0" type="number" class='pledgeInput'></el-input>
+                                    </div>
+                                    <div class='max' @click="pledgeMax(index)">greatest amount</div>
                                 </div>
-                                <div class='max'>greatest amount</div>
+                                <div class='pledgeBtn'>pledge</div>
                             </div>
-                            <div class='pledgeBtn'>pledge</div>
+                            <div class='farmRight'>
+                                <div class='balanceTip'>Deposited: {{getNum(i.personLpNum)}} LP（${{getTwoPrice(i.personLpValue)}}）</div>
+                                <div class='pledgeInputDiv'>
+                                    <div class='pledge'>
+                                        <el-input v-model="i.releaseVal" placeholder="0.0" type="number" class='pledgeInput'></el-input>
+                                    </div>
+                                    <div class='max' @click="releaseMax(index)">greatest amount</div>
+                                </div>
+                                <div class='pledgeBtn'>release mortgage</div>
+                            </div>
                         </div>
-                        <div class='farmRight'>
-                            <div class='balanceTip'>Deposited: 0LP（$0.00）</div>
-                            <div class='pledgeInputDiv'>
-                                <div class='pledge'>
-                                    <el-input v-model="releaseVal" placeholder="0.0" type="number" class='pledgeInput'></el-input>
-                                </div>
-                                <div class='max'>greatest amount</div>
-                            </div>
-                            <div class='pledgeBtn'>release mortgage</div>
+                        <div class='connect' v-else>
+                            <div class='connectTip'>Please switch network</div>
+                            <div class='connectBtn'>Network Error</div>
                         </div>
                     </div>
                     <div class='connect' v-else>
-                        <div class='connectTip'>Please switch network</div>
-                        <div class='connectBtn'>Network Error</div>
+                        <div class='connectTip'>Connect to a Wallet to start farm</div>
+                        <div class='connectBtn' @click="connect">Connect Wallet</div>
                     </div>
-                </div>
-                <div class='connect' v-else>
-                    <div class='connectTip'>Connect to a Wallet to start farm</div>
-                    <div class='connectBtn' @click="connect">Connect Wallet</div>
                 </div>
             </div>
         </div>
@@ -74,20 +76,21 @@
 
 <script>
 import { tokenList } from '../../constants/tokens'
-import { farmList } from '../../constants/farmList'
+import { lpList } from '../../constants/lpList.js'
 import utils from '../../utils/storage'
 import Web3 from 'web3'
+import { chainId } from '../../constants/common'
+import { pairAbi } from '../../constants/abi/pairAbi'
+import { farmAbi } from '../../constants/abi/farmAbi'
 export default {
     name: '',
     data () {
         return {
             fromAddress: utils.load('fromAddress'),
             network: utils.load('network'),
-            chainId: 137,
+            chainId: chainId,
             allToken: tokenList,
-            pledgeVal: null,
-            releaseVal: null,
-            allFarm: farmList
+            allLp: lpList
         }
     },
     methods: {
@@ -99,10 +102,20 @@ export default {
             }
         },
         openOrClose(index) {
-            for (const i in this.allFarm) {
+            for (const i in this.allLp) {
                 if (Number(i) === index) {
-                    this.allFarm[i].close = !this.allFarm[i].close
+                    this.allLp[i].close = !this.allLp[i].close
                 }
+            }
+        },
+        pledgeMax(index) {
+            if (Number(this.allLp[index].lpBalance) > 0) {
+                this.allLp[index].pledgeVal = this.allLp[index].lpBalance
+            }
+        },
+        releaseMax(index) {
+            if (Number(this.allLp[index].personLpNum) > 0) {
+                this.allLp[index].releaseVal = this.allLp[index].personLpNum
             }
         },
         connect() {
@@ -196,9 +209,167 @@ export default {
                 })
             }
         },
-        initList() {
-            for (const i in this.allFarm) {
-                this.$set(this.allFarm[i], 'close', true)
+        async initList() {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allLp) {
+                this.$set(this.allLp[i], 'close', true)
+                this.$set(this.allLp[i], 'pledgeVal', null)
+                this.$set(this.allLp[i], 'releaseVal', null)
+                if (this.allLp[i].stakeToken) {
+                    const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+                    const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+                    const lpDecimals = await pool.methods.decimals().call()
+                    const showBalance = lpBalance / Math.pow(10, lpDecimals)
+                    this.allLp[i].lpBalance = showBalance.toFixed(lpDecimals)
+
+                    const farmContract = new web3.eth.Contract(farmAbi, this.allLp[i].stakeToken)
+                    const lpPrice = await this.getLpPrice(this.allLp[i].address)
+                    this.allLp[i].lpPrice = lpPrice
+                    const lpBalanceValue = lpPrice * lpBalance
+                    this.allLp[i].lpBalanceValue = lpBalanceValue
+                    const totalSupply = await farmContract.methods.totalSupply().call()
+                    const farmValue = lpPrice * totalSupply
+                    this.allLp[i].farmValue = farmValue
+                    const periodFinish = await farmContract.methods.periodFinish().call()
+                    const now = new Date() // 获取当前时间
+                    const nowTime = Math.floor(now.getTime() / 1000)
+                    // 每秒产出JLS数量
+                    const rewardRate = await farmContract.methods.rewardRate().call()
+                    // 判断是否到期，到期后无奖励
+                    if (nowTime <= periodFinish) {
+                        if (this.allLp[i].farmValue) {
+                            // 一年总奖励
+                            const rewardRateYear = rewardRate * 3600 * 24 * 365
+                            const jlsPrice = this.getTokenPrice('JLS')
+                            const rewardRateYearValue = (rewardRateYear / Math.pow(10, 18)) * jlsPrice
+                            const apr = rewardRateYearValue / farmValue * 100
+                            const showApr = this.getAprShow(apr) + '%'
+                            this.allLp[i].apr = showApr
+                        } else { // 池子没有抵押资产
+                            this.allLp[i].apr = '∞'
+                        }
+                    } else if (nowTime > periodFinish) {
+                        this.allLp[i].apr = '0'
+                    }
+
+                    // 每天产出
+                    const rewardRateDay = rewardRate * 60 * 60 * 24 / Math.pow(10, 18)
+                    this.allLp[i].rewardRate = rewardRateDay
+
+                    // 个人抵押lp数量
+                    const personLpNum = await farmContract.methods.balanceOf(this.fromAddress).call()
+                    const personLpNumShow = personLpNum / Math.pow(10, lpDecimals)
+                    this.allLp[i].personLpNum = personLpNumShow.toFixed(lpDecimals)
+                    this.allLp[i].personLpValue = personLpNum * lpPrice
+                }
+            }
+        },
+        // 转换时间
+        getTime(date) {
+            const year = date.getFullYear()
+            const month = date.getMonth() + 1
+            const day = date.getDate()
+            const hours = date.getHours()
+            const minutes = date.getMinutes()
+            const seconds = date.getSeconds()
+            const time = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds
+            return time
+        },
+        // 获取lp单价
+        async getLpPrice(address) {
+            const web3 = new Web3(window.ethereum)
+            const pool = new web3.eth.Contract(pairAbi, address)
+            const reserves = await pool.methods.getReserves().call()
+            const token0 = await pool.methods.token0().call()
+            const token1 = await pool.methods.token1().call()
+            const decimals0 = this.getTokenDecimals(token0)
+            const decimals1 = this.getTokenDecimals(token1)
+            const token0Num = reserves._reserve0 / Math.pow(10, decimals0)
+            const token1Num = reserves._reserve1 / Math.pow(10, decimals1)
+            const totalSupply = await pool.methods.totalSupply().call()
+            const exchangeRate = token1Num / token0Num
+            const name0 = this.getTokenName(token0)
+            const name1 = this.getTokenName(token1)
+            this.getBaseVal(name0, name1, exchangeRate)
+            const token0Price = this.getTokenPrice(name0)
+            const token1Price = this.getTokenPrice(name1)
+            const totalPrice = token0Num * token0Price + token1Num * token1Price
+            const lpPrice = totalPrice / totalSupply
+            return lpPrice
+        },
+        getTokenPrice(name) {
+            for (const i in this.allToken) {
+                if (this.allToken[i].name === name) {
+                    return this.allToken[i].baseVal
+                }
+            }
+        },
+        // 获取token单价
+        getBaseVal(name0, name1, scale) {
+            for (const i of this.allToken) {
+                if (i.name === 'USDC') {
+                    i.baseVal = 1
+                }
+                if (name0 === 'USDC') {
+                    if (i.name === name1) {
+                        i.baseVal = scale
+                    }
+                }
+                if (name0 === 'WMATIC' && name1 === 'USDC') {
+                    if (i.name === name0) {
+                        i.baseVal = 1 / scale
+                    }
+                    if (i.name === 'MATIC') {
+                        i.baseVal = 1 / scale
+                    }
+                }
+            }
+        },
+        // 获取精度
+        getTokenDecimals(val) {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allToken) {
+                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
+                    return this.allToken[i].decimals
+                }
+            }
+        },
+        // 获取tokenName
+        getTokenName(val) {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allToken) {
+                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
+                    return this.allToken[i].name
+                }
+            }
+        },
+        // 保留两位小数
+        getTwoPrice(val) {
+            if (val) {
+                // const balance = Math.round(val * Math.pow(10, 2)) / Math.pow(10, 2)
+                const balance = val.toFixed(2)
+                return balance
+            } else {
+                return '0.00'
+            }
+        },
+        // 保留几位小数
+        getAprShow(val) {
+            if (val) {
+                const balance = Math.round(val * Math.pow(10, 2)) / Math.pow(10, 2)
+                return balance
+            } else {
+                return '0.00'
+            }
+        },
+        // 数字格式化
+        getNum(num) {
+            if (Number(num) < 1 && Number(num) > 0) {
+                return num
+            } else if (Number(num) >= 1) {
+                return Number(num).toFixed(5)
+            } else {
+                return 0
             }
         },
         // 初始化
@@ -242,18 +413,22 @@ export default {
             font-size: 18px;
             font-weight: bold;
             color: rgba(0,0,0,0.85);
-            flex:1;
         }
         .leftName{
             text-align: left;
+            flex:1;
         }
         .rightName{
             text-align: right;
             padding-right: 30px;
-            flex:0.6;
+            // flex:0.6;
+            width: 70px;
         }
         .second{
             flex:0.8;
+        }
+        .third{
+            flex:1;
         }
         .options{
             width: 60px;
@@ -265,6 +440,7 @@ export default {
             border-radius: 8px;
             box-sizing: border-box;
             margin-top: 20px;
+
             .itemInfo{
                 display: flex;
                 align-items: center;
@@ -273,11 +449,11 @@ export default {
                 padding:0 10px 0 10px;
             }
             .itemName{
-                flex:1;
                 color: rgba(0,0,0,0.85);
                 font-size: 16px;
             }
             .leftName{
+                flex:1;
                 text-align: left;
                 display: flex;
                 align-items: center;
@@ -289,6 +465,7 @@ export default {
                     img{
                         width: 100%;
                         height: 100%;
+                        border-radius: 50%;
                     }
                 }
                 .tokens{
@@ -299,7 +476,8 @@ export default {
             }
             .rightName{
                 text-align: right;
-                flex:0.6;
+                // flex:0.6;
+                width: 70px;
                 padding-right: 30px;
                 font-size: 16px;
                 color: rgba(0,0,0,0.85);
@@ -310,6 +488,7 @@ export default {
                 color: rgba(0,0,0,0.85);
             }
             .third{
+                flex:1;
                 .tokenInfoDiv{
                     width: 170px;
                     margin:0 auto;
@@ -326,6 +505,7 @@ export default {
                         img{
                             width: 100%;
                             height: 100%;
+                            border-radius: 50%;
                         }
                     }
                     .infoDesc{
@@ -350,13 +530,16 @@ export default {
                     transform:rotate(180deg);
                 }
             }
-            .options{
+            .optionsContainer{
                 height: 180px;
                 border-top:1px solid #DAE7F9;
                 box-sizing: border-box;
                 display: flex;
                 // align-items: center;
                 justify-content: center;
+                .farmContentDiv{
+                    flex:1;
+                }
                 .connect{
                     display: flex;
                     flex-direction: column;
@@ -404,7 +587,7 @@ export default {
                         height: 50px;
                         background: #F5F8FC;
                         border-radius: 5px;
-                        border: 1px solid #6D7278;
+                        border: 1px solid #d7d7d7;
                         box-sizing: border-box;
                         display: flex;
                         align-items: center;
@@ -445,7 +628,7 @@ export default {
              border: none;
              padding-left: 0;
              background-color:transparent;
-             font-size: 20px;
+             font-size: 18px;
         }
     }
 }

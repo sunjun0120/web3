@@ -106,7 +106,7 @@
 import Web3 from 'web3'
 import utils from '../../utils/storage'
 import { lpList } from '../../constants/lpList'
-// import { ERC20 } from '../../constants/abi/ERC20'
+import { chainId } from '../../constants/common'
 import { pairAbi } from '../../constants/abi/pairAbi'
 import { routerAbi } from '../../constants/abi/routerAbi'
 import { tokenList } from '../../constants/tokens'
@@ -132,7 +132,7 @@ export default {
             showCofirmBtn: false,
             confirmExchange: false,
             settings: 0.5,
-            chainId: 137
+            chainId: chainId
         }
     },
     methods: {

@@ -3,7 +3,7 @@
         <el-container class="home">
             <el-header class="header" height="70px">
                 <div class="left">
-                    <div class="logoImg">JLS</div>
+                    <div class="logoImg"></div>
                     <div class="logo">JLSwap</div>
                     <div class="menus">
                         <el-menu class="menu"
@@ -56,7 +56,7 @@
 <script>
 import Web3 from 'web3'
 import utils from '../utils/storage'
-// import abi from '../abi/ERC20.json'
+import { chainId } from '../constants/common'
 export default {
     name: '',
     data () {
@@ -85,7 +85,7 @@ export default {
             surplus: '$0.00',
             network: utils.load('network'),
             fromAddress: utils.load('fromAddress'),
-            chainId: 137 // Polygon Mainnet
+            chainId: chainId // Polygon Mainnet
         }
     },
     methods: {
@@ -258,13 +258,9 @@ export default {
                     width: 45px;
                     height: 45px;
                     border-radius: 50%;
-                    background: #CE2D32;
-                    color:#fff;
-                    font-size: 18px;
+                    background: url('../assets/JLS.png') no-repeat;
+                    background-size: 100% 100%;
                     margin-left: 3.125vw;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
                 }
             }
             .right{
