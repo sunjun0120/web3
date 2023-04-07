@@ -255,8 +255,8 @@ export default {
                 display: flex;
                 align-items: center;
                 .logoImg{
-                    width: 45px;
-                    height: 45px;
+                    width: 40px;
+                    height: 40px;
                     border-radius: 50%;
                     background: url('../assets/JLS.png') no-repeat;
                     background-size: 100% 100%;
@@ -370,6 +370,9 @@ export default {
 }
 .el-loading-mask{
     background-color:rgba(245, 248, 252,0.8)!important;
+}
+.el-dialog__headerbtn{
+    font-size: 20px!important;
 }
 .el-menu--popup-bottom-start{
     background-color:#000000!important;

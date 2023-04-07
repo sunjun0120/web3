@@ -82,7 +82,7 @@
                             </div>
                         </div>
                         <div class="approveBtn" @click="approve" v-if='!showCofirmBtn'>approve</div>
-                        <div class='approveBtn' v-else @click="confirm">Confirm adding liquidity</div>
+                        <div class='approveBtn' v-else @click="confirm">Confirm Supply</div>
                     </div>
                 </div>
             </div>
