@@ -43,12 +43,12 @@
                                     <div class='pledge'>
                                         <el-input v-model="i.pledgeVal" placeholder="0.0" type="number" class='pledgeInput' @input="showApproveBtn(i,index)"></el-input>
                                     </div>
-                                    <div class='max' @click="pledgeMax(index)">greatest amount</div>
+                                    <div class='max' @click="pledgeMax(index)">MAX</div>
                                 </div>
                                 <div v-show='!i.hideError' class='errorBtn'>Enter the correct amount</div>
                                 <div v-show='i.hideError'>
                                     <div class='pledgeBtn' v-show='!i.approve' @click='approve(i,index)'>Approve</div>
-                                    <div class='pledgeBtn' v-show='i.approve' @click='pledge(i)'>Pledge</div>
+                                    <div class='pledgeBtn' v-show='i.approve' @click='pledge(i)'>Stake</div>
                                 </div>
                             </div>
                             <div class='farmMiddle'>
@@ -57,10 +57,10 @@
                                     <div class='pledge'>
                                         <el-input v-model="i.releaseVal" placeholder="0.0" type="number" class='pledgeInput' @input="showReleaseBtn(i,index)"></el-input>
                                     </div>
-                                    <div class='max' @click="releaseMax(index)">greatest amount</div>
+                                    <div class='max' @click="releaseMax(index)">MAX</div>
                                 </div>
                                 <div v-show='!i.hideError2' class='errorBtn'>Enter the correct amount</div>
-                                <div class='pledgeBtn' v-show='i.hideError2' @click='release(i)'>Release mortgage</div>
+                                <div class='pledgeBtn' v-show='i.hideError2' @click='release(i)'>Withdraw</div>
                             </div>
                             <div class='farmRight'>
                                 <div class='balanceTip'>Earned rewards</div>
