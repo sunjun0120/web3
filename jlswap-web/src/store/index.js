@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import Web3 from 'web3'
 import utils from '../utils/storage'
-import { chainId, farmToken } from '../constants/common'
+import { chainId } from '../constants/common'
 import { pairAbi } from '../constants/abi/pairAbi'
 import { lpList } from '../constants/lpList.js'
 import { tokenList } from '../constants/tokens'
@@ -12,14 +12,9 @@ export const baseInfoStore = defineStore('baseInfo', {
         network: utils.load('network'),
         chainId: chainId,
         allLp: lpList,
-        allToken: tokenList,
-        farmTokenPrice: '$0.00'
+        allToken: tokenList
     }),
     actions: {
-        // 头部初始化
-        initHead() {
-            this.farmTokenPrice = '$0.00'
-        },
         // 获取兑换比例
         async getTokenScale() {
             const web3 = new Web3(window.ethereum)
@@ -39,18 +34,6 @@ export const baseInfoStore = defineStore('baseInfo', {
                 const name0 = this.getTokenName(token0)
                 const name1 = this.getTokenName(token1)
                 this.getBaseVal(name0, name1, exchangeRate)
-                this.farmTokenPrice = this.getPrice()
-            }
-        },
-        // 获取头部价格
-        getPrice() {
-            for (const i of this.allToken) {
-                if (i.name === farmToken) {
-                    const jlsPrice = i.baseVal
-                    const decimals = i.decimals
-                    const surplusVal = '$' + (jlsPrice / Math.pow(10, decimals)).toFixed(decimals)
-                    return surplusVal
-                }
             }
         },
         // 获取精度

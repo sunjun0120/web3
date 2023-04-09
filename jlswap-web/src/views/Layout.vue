@@ -145,6 +145,15 @@ export default {
                 return ''
             }
         },
+        // 保留几位小数
+        getAprShow(val) {
+            if (val) {
+                const balance = Math.round(val * Math.pow(10, 6)) / Math.pow(10, 6)
+                return balance
+            } else {
+                return '0.00'
+            }
+        },
         async getTvl() {
             const web3 = new Web3(window.ethereum)
             let tvl = 0
@@ -159,12 +168,13 @@ export default {
                 const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
                 const name0 = this.getTokenName(token0)
                 const name1 = this.getTokenName(token1)
-                const token0Price = this.getTokenPrice(name0)
-                const token1Price = this.getTokenPrice(name1)
+                const token0Price = 1 / this.getTokenPrice(name0)
+                const token1Price = 1 / this.getTokenPrice(name1)
                 const lpValue = token0Balance * token0Price + token1Balance * token1Price
                 tvl = tvl + lpValue
             }
-            const tvlValue = parseInt(tvl).toLocaleString()
+            const tvlValue = tvl.toFixed(2).toLocaleString()
+            // const tvlValue = parseInt(tvl).toLocaleString()
             this.all = '$' + tvlValue
         },
         async init() {
@@ -184,9 +194,11 @@ export default {
                     this.getTvl()
                     for (const i of this.allToken) {
                         if (i.name === farmToken) {
-                            const jlsPrice = i.baseVal
-                            const decimals = i.decimals
-                            const surplusVal = '$' + (jlsPrice / Math.pow(10, decimals)).toFixed(decimals)
+                            const jlsPrice = 1 / i.baseVal
+                            // const decimals = i.decimals
+                            // const surplusVal = '$' + (1 / jlsPrice).toFixed(decimals)
+
+                            const surplusVal = '$' + this.getAprShow(jlsPrice)
                             this.farmTokenPrice = surplusVal
                         }
                     }

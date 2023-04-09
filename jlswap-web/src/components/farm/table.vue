@@ -400,8 +400,8 @@ export default {
                     if (nowTime <= periodFinish) { // 判断是否到期，到期后无奖励
                         if (this.allLp[i].farmValue) {
                             const rewardRateYear = rewardRate * 3600 * 24 * 365 // 一年总奖励
-                            const jlsPrice = await this.getTokenPrice(farmToken)
-                            const rewardRateYearValue = (rewardRateYear / Math.pow(10, 18)) * jlsPrice
+                            const jlsPrice = this.getTokenPrice(farmToken)
+                            const rewardRateYearValue = (rewardRateYear / Math.pow(10, 18)) * (1 / jlsPrice)
                             const apr = rewardRateYearValue / farmValue * 100
                             const showApr = this.getAprShow(apr) + '%'
                             this.$set(this.allLp[i], 'apr', showApr)
@@ -447,8 +447,8 @@ export default {
                 const name0 = this.getTokenName(token0)
                 const name1 = this.getTokenName(token1)
                 this.getBaseVal(name0, name1, exchangeRate)
-                const token0Price = this.getTokenPrice(name0)
-                const token1Price = this.getTokenPrice(name1)
+                const token0Price = 1 / this.getTokenPrice(name0)
+                const token1Price = 1 / this.getTokenPrice(name1)
                 const totalPrice = token0Balance * token0Price + token1Balance * token1Price
                 const totalSupply = await scaleContract.methods.totalSupply().call()
                 const lpPrice = totalPrice / totalSupply
