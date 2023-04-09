@@ -104,12 +104,13 @@
 
 <script>
 import Web3 from 'web3'
-import utils from '../../utils/storage'
-import { lpList } from '../../constants/lpList'
-import { chainId } from '../../constants/common'
+import { chainId, nativeToken, nativeToErc20Token } from '../../constants/common'
+
+import { mapActions, mapState } from 'pinia'
+import { baseInfoStore } from '../../store/index'
+
 import { pairAbi } from '../../constants/abi/pairAbi'
 import { routerAbi } from '../../constants/abi/routerAbi'
-import { tokenList } from '../../constants/tokens'
 import C from '../../constants/contractAddress'
 export default {
     name: '',
@@ -125,17 +126,26 @@ export default {
             token2Balance: 0,
             tokenVal: null,
             showAuto: false,
-            fromAddress: utils.load('fromAddress'),
             pairAddress: '',
-            allToken: tokenList,
-            allLp: lpList,
             showCofirmBtn: false,
             confirmExchange: false,
+            allToken: [],
             settings: 0.5,
             chainId: chainId
         }
     },
+    computed: {
+        ...mapState(baseInfoStore, ['fromAddress', 'allLp']),
+        showError() {
+            if (this.tokenVal && Number(this.tokenVal) !== 0) {
+                return false
+            } else {
+                return true
+            }
+        }
+    },
     methods: {
+        ...mapActions(baseInfoStore, ['getTokenScale']),
         goBack() {
             this.$emit('goback')
         },
@@ -156,23 +166,23 @@ export default {
             this.tokenVal = 100
         },
         getImg(val) {
-            for (const i in this.allToken) {
-                if (this.allToken[i].name === val) {
-                    return this.allToken[i].icon
+            for (const i of this.allToken) {
+                if (i.name === val) {
+                    return i.icon
                 }
             }
         },
         getScale(val) {
-            for (const i in this.allToken) {
-                if (this.allToken[i].name === val) {
-                    return this.allToken[i].baseVal
+            for (const i of this.allToken) {
+                if (i.name === val) {
+                    return i.baseVal
                 }
             }
         },
         getTokenDecimals(val) {
-            for (const i in this.allToken) {
-                if (this.allToken[i].name === val) {
-                    return this.allToken[i].decimals
+            for (const i of this.allToken) {
+                if (i.name === val) {
+                    return i.decimals
                 }
             }
         },
@@ -185,7 +195,8 @@ export default {
             this.settings = 0.1
             this.showAuto = true
         },
-        getScaleTip(val) {
+        async getScaleTip(val) {
+            await this.getTokenScale()
             if (!val) {
                 const token1Scale = this.getScale(this.token1)
                 const token2Scale = this.getScale(this.token2)
@@ -221,12 +232,12 @@ export default {
             this.confirmExchange = false
             let message1
             let message2
-            if (this.token1 === 'WMATIC') {
-                message1 = this.balance1 + ' ' + 'MATIC'
+            if (this.token1 === nativeToErc20Token) {
+                message1 = this.balance1 + ' ' + nativeToken
                 message2 = this.balance2 + ' ' + this.token2
-            } else if (this.token2 === 'WMATIC') {
+            } else if (this.token2 === nativeToErc20Token) {
                 message1 = this.balance1 + ' ' + this.token1
-                message2 = this.balance2 + ' ' + 'MATIC'
+                message2 = this.balance2 + ' ' + nativeToken
             } else {
                 message1 = this.balance1 + ' ' + this.token1
                 message2 = this.balance2 + ' ' + this.token2
@@ -283,8 +294,8 @@ export default {
             const liquidity = parseInt(lpBalance * scale)
             const getLiquidity = web3.utils.toWei(liquidity.toString(), 'wei')
             const that = this
-            if (this.token1 === 'WMATIC' || this.token2 === 'WMATIC') {
-                if (this.token1 === 'WMATIC') {
+            if (this.token1 === nativeToErc20Token || this.token2 === nativeToErc20Token) {
+                if (this.token1 === nativeToErc20Token) {
                     const amountTokenMin = amountBMin
                     const amountETHMin = amountAMin
                     const tx = await routerContract.methods.removeLiquidityETH(tokenAddress2, getLiquidity, amountTokenMin, amountETHMin, this.fromAddress, deadline)
@@ -405,15 +416,6 @@ export default {
         // 初始化
         init() {
             this.tokenVal = null
-        }
-    },
-    computed: {
-        showError() {
-            if (this.tokenVal && Number(this.tokenVal) !== 0) {
-                return false
-            } else {
-                return true
-            }
         }
     },
     watch: {

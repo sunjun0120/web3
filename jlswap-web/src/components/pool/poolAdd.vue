@@ -25,7 +25,7 @@
             </div>
             <div class="token-container" v-loading='loading'>
                 <div class="token token1" @click="changeToken(1)">
-                    <div class="tokenImg"><img :src="getImg(token1)" alt=""></div>
+                    <div class="tokenImg"><img :src="getImg(token1)" alt="" v-show="token1"></div>
                     <div class="tokenCheck">
                         {{ token1 }}
                     </div>
@@ -41,7 +41,7 @@
                         </div>
                     </div>
                     <div class="tokenNumLine">
-                        <div class="maxVal" @click="getAllSwap(balance1)">MAX</div>
+                        <div class="maxVal" @click="getAllSwap1(balance1)">MAX</div>
                         <div class="numVal">{{ getShowBalance(balance1) }}<span class="balanceVal">{{ token1 }}</span></div>
                     </div>
                 </div>
@@ -65,7 +65,7 @@
                         </div>
                     </div>
                     <div class="tokenNumLine">
-                        <div class="maxVal" @click="getAllSwap(balance2)">MAX</div>
+                        <div class="maxVal" @click="getAllSwap2(balance2)">MAX</div>
                         <div class="numVal">{{ getShowBalance(balance2) }}<span class="balanceVal">{{ token2 }}</span></div>
                     </div>
                 </div>
@@ -136,12 +136,12 @@
 <script>
 import Web3 from 'web3'
 import ChangeToken from './changeToken.vue'
-import { chainId } from '../../constants/common'
-import { tokenList } from '../../constants/tokens'
-import { lpList } from '../../constants/lpList'
+import { chainId, nativeToken } from '../../constants/common'
+
+import { mapState, mapActions } from 'pinia'
+import { baseInfoStore } from '../../store/index'
 import { ERC20 } from '../../constants/abi/ERC20'
 import { routerAbi } from '../../constants/abi/routerAbi'
-import { pairAbi } from '../../constants/abi/pairAbi'
 import C from '../../constants/contractAddress'
 export default {
     name: '',
@@ -160,16 +160,24 @@ export default {
             swapE2: false,
             showAuto: false,
             confirmExchange: false,
-            fromAddress: '',
-            allToken: tokenList,
-            allLp: lpList,
             loading: false,
             showCofirmBtn: false,
             settings: 0.5,
             chainId: chainId
         }
     },
+    computed: {
+        ...mapState(baseInfoStore, ['fromAddress', 'allToken', 'allLp']),
+        showError() {
+            if (this.tokenVal1 && Number(this.tokenVal1) !== 0 && (this.tokenVal1 <= this.balance1) && this.tokenVal2 && Number(this.tokenVal2) !== 0 && (this.tokenVal2 <= this.balance2)) {
+                return false
+            } else {
+                return true
+            }
+        }
+    },
     methods: {
+        ...mapActions(baseInfoStore, ['changeFromAddress', 'getTokenScale']),
         goBack() {
             this.$emit('goback')
         },
@@ -177,7 +185,9 @@ export default {
             this.token1 = token0
             this.token2 = token1
             this.showCofirmBtn = false
-            this.init()
+            if (this.token1 || this.token2) {
+                this.init()
+            }
         },
         async changeToken(val) {
             if (val === 1) {
@@ -198,22 +208,36 @@ export default {
             this.tokenVal1 = null
             this.tokenVal2 = null
         },
-        limitToken1() {
-            this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
-        },
-        limitToken2() {
-            this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
-        },
-        getAllSwap(val) {
-            if (val && this.token2) {
-                this.tokenVal1 = val
+        async limitToken1() {
+            if (this.token2) {
+                await this.getTokenScale()
                 this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
             }
         },
+        async  limitToken2() {
+            if (this.token1) {
+                await this.getTokenScale()
+                this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
+            }
+        },
+        async  getAllSwap1(val) {
+            if (val && this.token2) {
+                this.tokenVal1 = val
+                await this.getTokenScale()
+                this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+            }
+        },
+        async  getAllSwap2(val) {
+            if (val && this.token1) {
+                this.tokenVal2 = val
+                await this.getTokenScale()
+                this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
+            }
+        },
         getImg(val) {
-            for (const i in this.allToken) {
-                if (this.allToken[i].name === val) {
-                    return this.allToken[i].icon
+            for (const i of this.allToken) {
+                if (i.name === val) {
+                    return i.icon
                 }
             }
         },
@@ -260,13 +284,13 @@ export default {
             const amountBMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(this.tokenVal2))).toString(), 'wei')
             const deadline = Math.floor(Date.now() / 1000) + 60 * 60// 1小时后过期
             const that = this
-            if (this.token1 === 'MATIC' || this.token2 === 'MATIC') { // erc20+native
+            if (this.token1 === nativeToken || this.token2 === nativeToken) { // erc20+native
                 let tokenAddress
                 let amountTokenDesired
                 let amountTokenMin
                 let amountETHMin
                 let amountETHDesired
-                if (this.token1 === 'MATIC') {
+                if (this.token1 === nativeToken) {
                     tokenAddress = tokenAddress2
                     amountTokenDesired = getAllowance2
                     amountETHDesired = getAllowance1
@@ -370,13 +394,13 @@ export default {
             } else {
                 getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
             }
-            if (this.token1 === 'MATIC') { // erc20+native
+            if (this.token1 === nativeToken) { // erc20+native
                 tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
                 allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
                 if (Number(getAllowance2) > Number(allowance2)) {
                     await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
-            } else if (this.token2 === 'MATIC') { // erc20+native
+            } else if (this.token2 === nativeToken) { // erc20+native
                 tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
                 allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
                 if (Number(getAllowance1) > Number(allowance1)) {
@@ -394,6 +418,7 @@ export default {
                     await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
             }
+            // this.confirm()
             this.showCofirmBtn = true
         },
         autoPercent() {
@@ -464,26 +489,16 @@ export default {
         async getAllBalance() {
             if (window.ethereum) {
                 const web3 = new Web3(window.ethereum)
-                if (this.fromAddress) {
-                    for (const i of this.allToken) {
-                        if (i.name === 'MATIC') { // 原生币通过钱包获取余额
-                            web3.eth.getBalance(this.fromAddress, (err, res) => {
-                                if (!err) {
-                                    const balance = res / Math.pow(10, 18)
-                                    i.balance = balance
-                                }
-                            })
-                        } else {
-                            if (i.address) {
-                                i.balance = await this.getTokenBalance(i.address, i.decimals)
-                            } else {
-                                i.balance = 0
+                for (const i of this.allToken) {
+                    if (i.name === nativeToken) { // 原生币通过钱包获取余额
+                        web3.eth.getBalance(this.fromAddress, (err, res) => {
+                            if (!err) {
+                                const balance = res / Math.pow(10, 18)
+                                i.balance = balance
                             }
-                        }
-                    }
-                } else {
-                    for (const i of this.allToken) {
-                        i.balance = 0
+                        })
+                    } else {
+                        i.balance = await this.getTokenBalance(i.address, i.decimals)
                     }
                 }
             }
@@ -499,68 +514,6 @@ export default {
                 const token2Scale = this.getScale(this.token2)
                 const showScale = token1Scale / token2Scale
                 return '1 ' + this.token2 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token1
-            }
-        },
-        // 获取兑换比例
-        async getTokenScale() {
-            const web3 = new Web3(window.ethereum)
-            for (const i in this.allLp) {
-                const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                const reserves = await scaleContract.methods.getReserves().call()
-                const token0 = await scaleContract.methods.token0().call()
-                const token1 = await scaleContract.methods.token1().call()
-                const decimals0 = this.getTokenDecimals(token0)
-                const decimals1 = this.getTokenDecimals(token1)
-                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
-                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
-                const exchangeRate = token1Balance / token0Balance
-                this.allLp[i].scale = exchangeRate
-                const name0 = this.getTokenName(token0)
-                const name1 = this.getTokenName(token1)
-                this.getBaseVal(name0, name1, exchangeRate)
-            }
-        },
-        // 获取能接受的最小值
-        getMinAvailable() {
-            const token1Scale = this.getScale(this.token1)
-            const token2Scale = this.getScale(this.token2)
-            const tokenVal = Number(this.tokenVal1) * (token2Scale / token1Scale) * (1 - this.settings / 100)
-            return this.getShowBalance(tokenVal)
-        },
-        getBaseVal(name0, name1, scale) {
-            for (const i of this.allToken) {
-                if (i.name === 'USDC') {
-                    i.baseVal = 1
-                }
-                if (name0 === 'USDC') {
-                    if (i.name === name1) {
-                        i.baseVal = scale
-                    }
-                }
-                if (name0 === 'WMATIC' && name1 === 'USDC') {
-                    if (i.name === name0) {
-                        i.baseVal = 1 / scale
-                    }
-                    if (i.name === 'MATIC') {
-                        i.baseVal = 1 / scale
-                    }
-                }
-            }
-        },
-        getTokenName(val) {
-            const web3 = new Web3(window.ethereum)
-            for (const i in this.allToken) {
-                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
-                    return this.allToken[i].name
-                }
-            }
-        },
-        getTokenDecimals(val) {
-            const web3 = new Web3(window.ethereum)
-            for (const i in this.allToken) {
-                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
-                    return this.allToken[i].decimals
-                }
             }
         },
         getScale(token) {
@@ -583,49 +536,25 @@ export default {
         },
         // 初始化
         async init() {
-            if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
-                const fromAddress = await web3.eth.getAccounts()
-                this.fromAddress = fromAddress[0]
-                this.tokenVal1 = null
-                this.tokenVal2 = null
-                if (this.fromAddress) {
-                    // 获取余额
-                    this.loading = true
-                    await this.getAllBalance()
-                    // 获取兑换比例
-                    this.getTokenScale()
-                    const a = this.token1
-                    const b = this.token2
-                    for (const i of this.allToken) {
-                        if (i.name === a) {
-                            this.balance1 = this.getShowBalance(i.balance)
-                        } else if (i.name === b) {
-                            this.balance2 = this.getShowBalance(i.balance)
-                        }
-                    }
-                    this.loading = false
-                } else {
-                    this.balance1 = 0
-                    this.balance2 = 0
+            this.tokenVal1 = null
+            this.tokenVal2 = null
+            // 获取余额
+            this.loading = true
+            await this.getAllBalance()
+            // 获取兑换比例
+            // this.getTokenScale()
+            const a = this.token1
+            const b = this.token2
+            for (const i of this.allToken) {
+                if (i.name === a) {
+                    this.balance1 = this.getShowBalance(i.balance)
+                } else if (i.name === b) {
+                    this.balance2 = this.getShowBalance(i.balance)
                 }
-            } else {
-                console.log('请安装MetaMask钱包')
             }
+            this.loading = false
         }
     },
-    computed: {
-        showError() {
-            if (this.tokenVal1 && Number(this.tokenVal1) !== 0 && (this.tokenVal1 <= this.balance1) && this.tokenVal2 && Number(this.tokenVal2) !== 0 && (this.tokenVal2 <= this.balance2)) {
-                return false
-            } else {
-                return true
-            }
-        }
-    },
-    // mounted () {
-    //     this.init()
-    // },
     watch: {
         settings(newV, oldV) {
             if (newV !== 0.1) {
@@ -637,10 +566,6 @@ export default {
 </script>
 <style lang="less" scoped>
 .jlswap-poolAdd{
-    // height: 100%;
-    // display: flex;
-    // align-items: center;
-    // justify-content: center;
     .goBack{
         font-size: 20px;
         color: #000;

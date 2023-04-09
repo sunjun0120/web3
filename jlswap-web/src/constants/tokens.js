@@ -30,7 +30,6 @@ export const tokenList = [
     },
     {
         name: 'JLS',
-        desc: 'test JLST',
         icon: JLS,
         address: '0x93e0c6f2387af2bb367bcef22643532976e4660c',
         decimals: 18

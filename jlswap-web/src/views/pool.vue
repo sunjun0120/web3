@@ -18,9 +18,9 @@
                                         <div class='img'><img :src="getImg(i.to)" alt=""></div>
                                         <div class='tokens'>{{i.from}} / {{i.to}}</div>
                                     </div>
-                                    <div :class="i.close?'right':'right arrowUp'" @click='openOrClose(index)'>manage</div>
+                                    <div :class="i.close?'right':'right arrowUp'" @click='openOrClose(index,i.address)'>manage</div>
                                 </div>
-                                <div class='infoDiv' v-show='!i.close'>
+                                <div class='infoDiv' v-show='!i.close' v-loading='lpLoading'>
                                     <div class='info'>
                                         <div class='infoItem'>
                                             <div class='infoLeft'>Pooled {{i.from}}：</div>
@@ -62,13 +62,12 @@
     </div>
 </template>
 <script>
-import utils from '../utils/storage'
 import Web3 from 'web3'
 import { chainId } from '../constants/common'
-import { tokenList } from '../constants/tokens'
-import { lpList } from '../constants/lpList'
 import { pairAbi } from '../constants/abi/pairAbi'
-import { ERC20 } from '../constants/abi/ERC20'
+import { mapState, mapActions } from 'pinia'
+import { baseInfoStore } from '../store/index'
+
 import PoolAdd from '../components/pool/poolAdd.vue'
 import PoolRemove from '../components/pool/poolRemove.vue'
 import ConfirmWait from '../components/swap/waitDia.vue'
@@ -81,22 +80,23 @@ export default {
     },
     data () {
         return {
-            fromAddress: utils.load('fromAddress'),
-            network: utils.load('network'),
-            allToken: tokenList,
-            allLp: lpList,
             showAdd: 0,
             loading: true,
+            lpLoading: false,
             chainId: chainId
         }
     },
+    computed: {
+        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'allLp'])
+    },
     methods: {
+        ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'getTokenScale', 'connect']),
         goback() {
             this.showAdd = 0
             this.init()
         },
         addPool() {
-            this.$refs.poolAdd.show('USDC', '')
+            this.$refs.poolAdd.show('', '')
             this.showAdd = 1
         },
         showAddDia(token0, token1) {
@@ -126,57 +126,10 @@ export default {
                 }
             }
         },
-        getBalance(val) {
-            for (const i in this.allToken) {
-                if (this.allToken[i].name === val) {
-                    return this.getShowBalance(this.allToken[i].balance)
-                }
-            }
-        },
         // 保留5位小数
         getShowBalance(val) {
             const balance = Math.round(val * Math.pow(10, 5)) / Math.pow(10, 5)
             return balance
-        },
-        // 获取代币余额
-        async getTokenBalance(address, decimals) {
-            const web3 = new Web3(window.ethereum)
-            const contractAddress = address
-            const fromAddress = await web3.eth.getAccounts()
-            const ethContract = new web3.eth.Contract(ERC20, contractAddress)
-            const balance = await ethContract.methods.balanceOf(fromAddress[0]).call()
-            const balanceVal = balance / Math.pow(10, decimals)
-            return balanceVal
-        },
-        async getAllBalance() {
-            if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
-                if (this.fromAddress) {
-                    const netId = await web3.eth.getChainId()
-                    if (this.chainId === netId) {
-                        for (const i of this.allToken) {
-                            if (i.name === 'MATIC') { // 原生币通过钱包获取余额
-                                web3.eth.getBalance(this.fromAddress, (err, res) => {
-                                    if (!err) {
-                                        const balance = res / Math.pow(10, 18)
-                                        i.balance = balance
-                                    }
-                                })
-                            } else {
-                                if (i.address) {
-                                    i.balance = await this.getTokenBalance(i.address, i.decimals)
-                                } else {
-                                    i.balance = 0
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    for (const i of this.allToken) {
-                        i.balance = 0
-                    }
-                }
-            }
         },
         getTokenDecimals(val) {
             const web3 = new Web3(window.ethereum)
@@ -199,60 +152,6 @@ export default {
                 return percent + '%'
             }
         },
-        async initList() {
-            const web3 = new Web3(window.ethereum)
-            this.loading = true
-            // await this.getAllBalance()
-            for (const i in this.allLp) {
-                this.$set(this.allLp[i], 'close', true)
-                const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-                // console.log(lpBalance)
-                this.allLp[i].lpBalance = lpBalance
-                if (lpBalance > 0) {
-                    this.$set(this.allLp[i], 'show', true)
-                } else {
-                    this.$set(this.allLp[i], 'show', false)
-                }
-                // 获取池子里token额度和兑换比例
-                const reserves = await pool.methods.getReserves().call()
-                const token0 = await pool.methods.token0().call()
-                const token1 = await pool.methods.token1().call()
-                const decimals0 = this.getTokenDecimals(token0)
-                const decimals1 = this.getTokenDecimals(token1)
-                const totalSupply = await pool.methods.totalSupply().call()
-                this.allLp[i].proportion = lpBalance / totalSupply
-                const token0Balance = reserves._reserve0 * (lpBalance / totalSupply) / Math.pow(10, decimals0)
-                const token1Balance = reserves._reserve1 * (lpBalance / totalSupply) / Math.pow(10, decimals1)
-                this.allLp[i].token0Balance = token0Balance
-                this.allLp[i].token1Balance = token1Balance
-                const exchangeRate = token1Balance / token0Balance
-                const name0 = this.getTokenName(token0)
-                const name1 = this.getTokenName(token1)
-                this.getBaseVal(name0, name1, exchangeRate)
-            }
-            this.loading = false
-        },
-        getBaseVal(name0, name1, scale) {
-            for (const i of this.allToken) {
-                if (i.name === 'USDC') {
-                    i.baseVal = 1
-                }
-                if (name0 === 'USDC') {
-                    if (i.name === name1) {
-                        i.baseVal = scale
-                    }
-                }
-                if (name0 === 'WMATIC' && name1 === 'USDC') {
-                    if (i.name === name0) {
-                        i.baseVal = 1 / scale
-                    }
-                    if (i.name === 'MATIC') {
-                        i.baseVal = 1 / scale
-                    }
-                }
-            }
-        },
         getTokenName(val) {
             const web3 = new Web3(window.ethereum)
             for (const i in this.allToken) {
@@ -261,68 +160,28 @@ export default {
                 }
             }
         },
-        async openOrClose(index) {
+        async openOrClose(index, address) {
             for (const i in this.allLp) {
                 if (Number(i) === index) {
                     this.allLp[i].close = !this.allLp[i].close
-                }
-            }
-        },
-        connect() {
-            if (window.ethereum) {
-                const that = this
-                window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
-                    that.fromAddress = res[0]
-                    utils.put('fromAddress', that.fromAddress)
-                    that.connectWeb3()
-                })
-            } else {
-                // 唤起失败，跳转metaMask
-                window.open('https://metamask.io/')
-            }
-        },
-        // 连接web3,切换节点
-        async connectWeb3() {
-            if (window.ethereum) {
-                const that = this
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{
-                            chainId: Web3.utils.numberToHex(that.chainId) // 目标链ID
-                        }]
-                    })
-                    that.network = true
-                    utils.put('network', true)
-                } catch (e) {
-                    console.log(e.code)
-                    if (e.code === 4902) {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [
-                                    {
-                                        chainId: Web3.utils.numberToHex(that.chainId),
-                                        chainName: 'Polygon',
-                                        nativeCurrency: {
-                                            name: 'matic',
-                                            symbol: 'MATIC',
-                                            decimals: 18
-                                        },
-                                        rpcUrls: ['https://polygon.llamarpc.com'],
-                                        blockExplorerUrls: ['https://polygonscan.com']
-                                    }
-                                ]
-                            })
-                            that.network = true
-                            utils.put('network', true)
-                        } catch (error) {
-                        }
-                    } else if (e.code === 4001) {
-
-                    } else {
-                        that.network = false
-                        utils.put('network', false)
+                    if (!this.allLp[i].close) {
+                        // 获取池子里token额度和兑换比例
+                        this.lpLoading = true
+                        const web3 = new Web3(window.ethereum)
+                        const pool = new web3.eth.Contract(pairAbi, address)
+                        const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+                        const reserves = await pool.methods.getReserves().call()
+                        const token0 = await pool.methods.token0().call()
+                        const token1 = await pool.methods.token1().call()
+                        const decimals0 = this.getTokenDecimals(token0)
+                        const decimals1 = this.getTokenDecimals(token1)
+                        const totalSupply = await pool.methods.totalSupply().call()
+                        this.allLp[i].proportion = lpBalance / totalSupply
+                        const token0Balance = reserves._reserve0 * (lpBalance / totalSupply) / Math.pow(10, decimals0)
+                        const token1Balance = reserves._reserve1 * (lpBalance / totalSupply) / Math.pow(10, decimals1)
+                        this.allLp[i].token0Balance = token0Balance
+                        this.allLp[i].token1Balance = token1Balance
+                        this.lpLoading = false
                     }
                 }
             }
@@ -332,8 +191,7 @@ export default {
             if (window.ethereum) {
                 const that = this
                 window.ethereum.on('accountsChanged', function(res) {
-                    that.fromAddress = res[0]
-                    utils.put('fromAddress', that.fromAddress)
+                    that.changeFromAddress(res[0])
                     if (!that.fromAddress) {
                         that.showAdd = 0
                     }
@@ -348,33 +206,38 @@ export default {
                 window.ethereum.on('chainChanged', function(val) {
                     const chainId = Web3.utils.numberToHex(that.chainId)
                     if (val !== chainId) {
-                        that.network = false
-                        utils.put('network', false)
+                        that.changeNetwork(false)
                         that.showAdd = 0
                     } else {
-                        that.network = true
-                        utils.put('network', true)
+                        that.changeNetwork(true)
                         that.init()
                     }
                 })
             }
         },
+        async initList() {
+            const web3 = new Web3(window.ethereum)
+            this.loading = true
+            for (const i in this.allLp) {
+                this.$set(this.allLp[i], 'close', true)
+                const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+                const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+                this.allLp[i].lpBalance = lpBalance
+                if (lpBalance > 0) {
+                    this.$set(this.allLp[i], 'show', true)
+                } else {
+                    this.$set(this.allLp[i], 'show', false)
+                }
+            }
+            this.loading = false
+        },
         // 初始化
         async init() {
             if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
-                const fromAddress = await web3.eth.getAccounts()
-                this.fromAddress = fromAddress[0]
-                utils.put('fromAddress', this.fromAddress)
                 if (this.fromAddress) {
-                    const netId = await web3.eth.getChainId()
-                    if (this.chainId === netId) {
-                        this.network = true
-                        utils.put('network', true)
+                    if (this.network) {
+                        // this.getTokenScale()
                         this.initList()
-                    } else {
-                        this.network = false
-                        utils.put('network', false)
                     }
                 }
             } else {

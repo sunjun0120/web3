@@ -1,6 +1,6 @@
 <template>
     <div class="jlswap-farm">
-        <div class='top'>
+        <!-- <div class='top'>
             <div class="left">
                 <div class="tip">Farms TVL</div>
                 <div class="num">$ 17,154,843</div>
@@ -9,21 +9,27 @@
                 <div class="tip">My Holdings</div>
                 <div class="num">$ 0.00</div>
             </div>
-        </div>
+        </div> -->
         <div class='middle'>
             <el-tabs v-model="activeName" @tab-click="handleClick">
-                <el-tab-pane label="All" name="All"><farm-table></farm-table></el-tab-pane>
-                <el-tab-pane label="Myfarms" name="Myfarms"><farm-table></farm-table></el-tab-pane>
+                <el-tab-pane label="Farms List" name="All"><farm-table  @showWait='showWait' @hideWait='hideWait' @showSuccess='showSuccess' @showFail='showFail'></farm-table></el-tab-pane>
+                <!-- <el-tab-pane label="Myfarms" name="Myfarms"><farm-table></farm-table></el-tab-pane> -->
             </el-tabs>
         </div>
+        <confirm-wait ref="confirmWait"></confirm-wait>
+        <confirm-success ref="confirmSuccess"></confirm-success>
+        <confirm-fail ref="confirmFail"></confirm-fail>
     </div>
 </template>
 <script>
 import FarmTable from '../components/farm/table.vue'
+import ConfirmWait from '../components/swap/waitDia.vue'
+import ConfirmSuccess from '../components/swap/success.vue'
+import ConfirmFail from '../components/swap/fail.vue'
 export default {
     name: '',
     components: {
-        FarmTable
+        FarmTable, ConfirmWait, ConfirmSuccess, ConfirmFail
     },
     data () {
         return {
@@ -31,7 +37,19 @@ export default {
         }
     },
     methods: {
-        handleClick() {}
+        handleClick() {},
+        showWait(val) {
+            this.$refs.confirmWait.show(val)
+        },
+        hideWait() {
+            this.$refs.confirmWait.hide()
+        },
+        showSuccess(val) {
+            this.$refs.confirmSuccess.show(val)
+        },
+        showFail(val) {
+            this.$refs.confirmFail.show(val)
+        }
     }
 }
 </script>

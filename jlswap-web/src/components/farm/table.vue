@@ -9,19 +9,19 @@
     </div>
     <div class='content'>
         <div class='itemDiv' v-for='i,index in allLp' :key='index'>
-            <div class="item" v-if="i.stakeToken">
-                <div class='itemInfo' >
+            <div class="item" v-if="i.farmAddress">
+                <div class='itemInfo' v-loading='i.loading'>
                     <div class='itemName leftName'>
                         <div class='img'><img :src="getImg(i.from)" alt=""></div>
                         <div class='img'><img :src="getImg(i.to)" alt=""></div>
                         <div class='tokens'>{{i.from}} / {{ i.to }}</div>
                     </div>
-                    <div class='itemName second'>${{ i.farmValue }}</div>
+                    <div class='itemName second'>${{ getAprShow(i.farmValue) }}</div>
                     <div class='itemName third'>
                         <div class='tokenInfoDiv'>
                             <div class='tokenInfo'>
-                                <div class='tokenImg'><img :src="getImg('JLS')" alt=""></div>
-                                <div class='infoDesc'>{{ i.rewardRate }} JLS/day</div>
+                                <div class='tokenImg'><img :src="getImg(farmToken)" alt=""></div>
+                                <div class='infoDesc'>{{ i.rewardRate }} {{farmToken}}/day</div>
                             </div>
                             <!-- <div class='tokenInfo'>
                                 <div class='tokenImg'><img :src="getImg(i.to)" alt=""></div>
@@ -34,28 +34,41 @@
                         <div :class="i.close?'manage el-icon-arrow-down':'manage el-icon-arrow-down arrowUp'" @click="openOrClose(index)"></div>
                     </div>
                 </div>
-                <div class='optionsContainer' v-show='!i.close'>
+                <div class='optionsContainer' v-show='!i.close' v-loading='i.detailLoading'>
                     <div class='farmContentDiv' v-if="fromAddress">
                         <div class="farmContent" v-if="network">
                             <div class='farmLeft'>
-                                <div class='balanceTip'>Available: {{getNum(i.lpBalance)}} LP（${{getTwoPrice(i.lpBalanceValue)}}）</div>
+                                <div class='balanceTip'>Available: {{getNum(i.lpBalance)}} LP（${{getAprShow(i.lpBalanceValue)}}）</div>
                                 <div class='pledgeInputDiv'>
                                     <div class='pledge'>
-                                        <el-input v-model="i.pledgeVal" placeholder="0.0" type="number" class='pledgeInput'></el-input>
+                                        <el-input v-model="i.pledgeVal" placeholder="0.0" type="number" class='pledgeInput' @input="showApproveBtn(i,index)"></el-input>
                                     </div>
                                     <div class='max' @click="pledgeMax(index)">greatest amount</div>
                                 </div>
-                                <div class='pledgeBtn'>pledge</div>
+                                <div v-show='!i.hideError' class='errorBtn'>Enter the correct amount</div>
+                                <div v-show='i.hideError'>
+                                    <div class='pledgeBtn' v-show='!i.approve' @click='approve(i,index)'>Approve</div>
+                                    <div class='pledgeBtn' v-show='i.approve' @click='pledge(i)'>Pledge</div>
+                                </div>
                             </div>
-                            <div class='farmRight'>
-                                <div class='balanceTip'>Deposited: {{getNum(i.personLpNum)}} LP（${{getTwoPrice(i.personLpValue)}}）</div>
+                            <div class='farmMiddle'>
+                                <div class='balanceTip'>Deposited: {{getNum(i.personLpNum)}} LP（${{getAprShow(i.personLpValue)}}）</div>
                                 <div class='pledgeInputDiv'>
                                     <div class='pledge'>
-                                        <el-input v-model="i.releaseVal" placeholder="0.0" type="number" class='pledgeInput'></el-input>
+                                        <el-input v-model="i.releaseVal" placeholder="0.0" type="number" class='pledgeInput' @input="showReleaseBtn(i,index)"></el-input>
                                     </div>
                                     <div class='max' @click="releaseMax(index)">greatest amount</div>
                                 </div>
-                                <div class='pledgeBtn'>release mortgage</div>
+                                <div v-show='!i.hideError2' class='errorBtn'>Enter the correct amount</div>
+                                <div class='pledgeBtn' v-show='i.hideError2' @click='release(i)'>Release mortgage</div>
+                            </div>
+                            <div class='farmRight'>
+                                <div class='balanceTip'>Earned rewards</div>
+                                <div class='pledgeInputDiv2'>
+                                    {{i.rewardCount}}
+                                </div>
+                                <div class='pledgeBtn' v-if='showCliam(i.rewardCount)' @click='cliam(i)'>Cliam</div>
+                                <div class='pledgeBtn disableBtn' v-else>Cliam</div>
                             </div>
                         </div>
                         <div class='connect' v-else>
@@ -75,25 +88,25 @@
 </template>
 
 <script>
-import { tokenList } from '../../constants/tokens'
-import { lpList } from '../../constants/lpList.js'
-import utils from '../../utils/storage'
 import Web3 from 'web3'
-import { chainId } from '../../constants/common'
+import { chainId, farmToken } from '../../constants/common'
+import { mapState, mapActions } from 'pinia'
+import { baseInfoStore } from '../../store/index'
 import { pairAbi } from '../../constants/abi/pairAbi'
 import { farmAbi } from '../../constants/abi/farmAbi'
 export default {
     name: '',
     data () {
         return {
-            fromAddress: utils.load('fromAddress'),
-            network: utils.load('network'),
             chainId: chainId,
-            allToken: tokenList,
-            allLp: lpList
+            farmToken: farmToken
         }
     },
+    computed: {
+        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'allLp'])
+    },
     methods: {
+        ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'connect', 'getBaseVal', 'connectWeb3']),
         getImg(val) {
             for (const i in this.allToken) {
                 if (this.allToken[i].name === val) {
@@ -105,88 +118,197 @@ export default {
             for (const i in this.allLp) {
                 if (Number(i) === index) {
                     this.allLp[i].close = !this.allLp[i].close
+                    if (this.fromAddress) {
+                        if (!this.allLp[i].close) {
+                            this.getDetailInfo(index)
+                        }
+                    }
                 }
             }
         },
         pledgeMax(index) {
             if (Number(this.allLp[index].lpBalance) > 0) {
                 this.allLp[index].pledgeVal = this.allLp[index].lpBalance
+                this.allLp[index].hideError = true
+                this.showApprove(this.allLp[index], index)
             }
         },
         releaseMax(index) {
             if (Number(this.allLp[index].personLpNum) > 0) {
                 this.allLp[index].releaseVal = this.allLp[index].personLpNum
+                this.allLp[index].hideError2 = true
             }
         },
-        connect() {
-            if (window.ethereum) {
-                const that = this
-                window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
-                    that.fromAddress = res[0]
-                    utils.put('fromAddress', that.fromAddress)
-                    that.connectWeb3()
-                })
+        showCliam(val) {
+            if (val && Number(val) > 0) {
+                return true
             } else {
-                // 唤起失败，跳转metaMask
-                window.open('https://metamask.io/')
+                return false
             }
         },
-        // 连接web3,切换节点
-        async connectWeb3() {
-            if (window.ethereum) {
-                const that = this
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{
-                            chainId: Web3.utils.numberToHex(that.chainId) // 目标链ID
-                        }]
-                    })
-                    that.network = true
-                    utils.put('network', true)
-                } catch (e) {
-                    console.log(e.code)
-                    if (e.code === 4902) {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [
-                                    {
-                                        chainId: Web3.utils.numberToHex(that.chainId),
-                                        chainName: 'Polygon',
-                                        nativeCurrency: {
-                                            name: 'matic',
-                                            symbol: 'MATIC',
-                                            decimals: 18
-                                        },
-                                        rpcUrls: ['https://polygon.llamarpc.com'],
-                                        blockExplorerUrls: ['https://polygonscan.com']
-                                    }
-                                ]
-                            })
-                            that.network = true
-                            utils.put('network', true)
-                        } catch (error) {
-                        }
-                    } else if (e.code === 4001) {
-
+        async cliam(item) {
+            const web3 = new Web3(window.ethereum)
+            const farmContract = new web3.eth.Contract(farmAbi, item.farmAddress)
+            const tx = await farmContract.methods.getReward()
+            const that = this
+            await web3.eth.sendTransaction({
+                from: this.fromAddress,
+                to: item.farmAddress,
+                data: tx.encodeABI(),
+                gas: await tx.estimateGas({ from: this.fromAddress }),
+                gasPrice: await web3.eth.getGasPrice()
+            }, function(error, hash) {
+                if (error) {
+                    that.$emit('hideWait')
+                    if (error.code !== 4001) {
+                        that.$emit('showFail', error)
                     } else {
-                        that.network = false
-                        utils.put('network', false)
+                        that.$emit('showFail', '')
                     }
                 }
+                if (hash) {
+                    that.$emit('hideWait')
+                    that.$emit('showSuccess', hash)
+                    that.getStatus(hash)
+                }
+            })
+        },
+        async showApproveBtn(item, index) {
+            if (Number(item.pledgeVal) <= Number(item.lpBalance) && Number(item.pledgeVal) > 0) {
+                this.allLp[index].hideError = true
+                this.showApprove(item, index)
+            } else {
+                this.allLp[index].hideError = false
             }
         },
+        async showReleaseBtn(item, index) {
+            if (Number(item.releaseVal) <= Number(item.personLpNum) && Number(item.releaseVal) > 0) {
+                this.allLp[index].hideError2 = true
+            } else {
+                this.allLp[index].hideError2 = false
+            }
+        },
+        async showApprove(item, index) {
+            const web3 = new Web3(window.ethereum)
+            const stakingTokenAddress = item.address
+            const stakingTokenContract = new web3.eth.Contract(pairAbi, stakingTokenAddress)
+            const allowance = await stakingTokenContract.methods.allowance(this.fromAddress, item.farmAddress).call()
+            const pool = new web3.eth.Contract(pairAbi, item.address)
+            const lpDecimals = await pool.methods.decimals().call()
+            const pledgeVal = item.pledgeVal * Math.pow(10, lpDecimals)
+            if (Number(pledgeVal) > Number(allowance)) {
+                this.allLp[index].approve = false
+            } else {
+                this.allLp[index].approve = true
+            }
+        },
+        async approve(item, index) {
+            const web3 = new Web3(window.ethereum)
+            const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
+            const stakingTokenAddress = item.address
+            const stakingTokenContract = new web3.eth.Contract(pairAbi, stakingTokenAddress)
+            await stakingTokenContract.methods.approve(item.farmAddress, amountToApprove).send({ from: this.fromAddress })
+            this.allLp[index].approve = true
+        },
+        async pledge(item) {
+            const web3 = new Web3(window.ethereum)
+            const farmContract = new web3.eth.Contract(farmAbi, item.farmAddress)
+            const pool = new web3.eth.Contract(pairAbi, item.address)
+            const lpDecimals = await pool.methods.decimals().call()
+            const pledgeVal = item.pledgeVal * Math.pow(10, lpDecimals)
+            const tx = await farmContract.methods.stake(pledgeVal)
+            const that = this
+            await web3.eth.sendTransaction({
+                from: this.fromAddress,
+                to: item.farmAddress,
+                data: tx.encodeABI(),
+                gas: await tx.estimateGas({ from: this.fromAddress }),
+                gasPrice: await web3.eth.getGasPrice()
+            }, function(error, hash) {
+                if (error) {
+                    that.$emit('hideWait')
+                    if (error.code !== 4001) {
+                        that.$emit('showFail', error)
+                    } else {
+                        that.$emit('showFail', '')
+                    }
+                }
+                if (hash) {
+                    that.$emit('hideWait')
+                    that.$emit('showSuccess', hash)
+                    that.getStatus(hash)
+                }
+            })
+        },
+        async release(item) {
+            const web3 = new Web3(window.ethereum)
+            const farmContract = new web3.eth.Contract(farmAbi, item.farmAddress)
+            const pool = new web3.eth.Contract(pairAbi, item.address)
+            const lpDecimals = await pool.methods.decimals().call()
+            const releaseVal = item.releaseVal * Math.pow(10, lpDecimals)
+            const tx = await farmContract.methods.withdraw(releaseVal)
+            const that = this
+            await web3.eth.sendTransaction({
+                from: this.fromAddress,
+                to: item.farmAddress,
+                data: tx.encodeABI(),
+                gas: await tx.estimateGas({ from: this.fromAddress }),
+                gasPrice: await web3.eth.getGasPrice()
+            }, function(error, hash) {
+                if (error) {
+                    that.$emit('hideWait')
+                    if (error.code !== 4001) {
+                        that.$emit('showFail', error)
+                    } else {
+                        that.$emit('showFail', '')
+                    }
+                }
+                if (hash) {
+                    that.$emit('hideWait')
+                    that.$emit('showSuccess', hash)
+                    that.getStatus(hash)
+                }
+            })
+        },
+        // 监听状态
+        getStatus(val) {
+            const web3 = new Web3(window.ethereum)
+            const that = this
+            const startTime = Date.now() // 记录开始时间
+            const timeout = 5 * 60 * 1000 // 设置超时时间为5分钟
+            web3.eth.getTransactionReceipt(val, (error, receipt) => {
+                if (error) {
+                    console.log(error)
+                } else {
+                    // console.log(receipt)
+                    if (receipt === null) {
+                        const elapsedTime = Date.now() - startTime
+                        if (elapsedTime < timeout) {
+                            setTimeout(that.getStatus(val), 1000)
+                        } else {
+                            console.error('Transaction timed out')
+                        }
+                    } else if (receipt.status) {
+                        that.$notify({
+                            title: 'Transaction success',
+                            type: 'success'
+                        })
+                        that.initList()
+                    } else {
+                        that.$notify.error({
+                            title: 'Transaction fail'
+                        })
+                    }
+                }
+            })
+        },
+
         // 监听账户切换
         onChangeAccount() {
             if (window.ethereum) {
                 const that = this
                 window.ethereum.on('accountsChanged', function(res) {
-                    that.fromAddress = res[0]
-                    utils.put('fromAddress', that.fromAddress)
-                    if (!that.fromAddress) {
-                        that.showAdd = 0
-                    }
+                    that.changeFromAddress(res[0])
                     that.init()
                 })
             }
@@ -198,69 +320,102 @@ export default {
                 window.ethereum.on('chainChanged', function(val) {
                     const chainId = Web3.utils.numberToHex(that.chainId)
                     if (val !== chainId) {
-                        that.network = false
-                        utils.put('network', false)
-                        that.showAdd = 0
+                        that.changeNetwork(false)
                     } else {
-                        that.network = true
-                        utils.put('network', true)
+                        that.changeNetwork(true)
                         that.init()
                     }
                 })
             }
         },
-        async initList() {
+        async getDetailInfo(i) {
+            this.allLp[i].detailLoading = true
             const web3 = new Web3(window.ethereum)
+            const farmContract = new web3.eth.Contract(farmAbi, this.allLp[i].farmAddress)
+            const lpPrice = this.allLp[i].lpPrice
+
+            // 个人可用lp数量
+            const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+            const lpDecimals = await pool.methods.decimals().call()
+            const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+            const showBalance = lpBalance / Math.pow(10, lpDecimals)
+            this.allLp[i].lpBalance = showBalance.toFixed(lpDecimals)
+            const lpBalanceValue = lpPrice * lpBalance
+            this.allLp[i].lpBalanceValue = lpBalanceValue
+            // 个人抵押lp数量
+            const personLpNum = await farmContract.methods.balanceOf(this.fromAddress).call()
+            const personLpNumShow = personLpNum / Math.pow(10, lpDecimals)
+            this.allLp[i].personLpNum = personLpNumShow.toFixed(lpDecimals)
+            this.allLp[i].personLpValue = personLpNum * lpPrice
+
+            // 个人奖励token数量
+            const rewardCount = await farmContract.methods.earned(this.fromAddress).call()
+            this.allLp[i].rewardCount = rewardCount / Math.pow(10, 18)
+            this.allLp[i].detailLoading = false
+        },
+        initNoUser() {
             for (const i in this.allLp) {
                 this.$set(this.allLp[i], 'close', true)
                 this.$set(this.allLp[i], 'pledgeVal', null)
                 this.$set(this.allLp[i], 'releaseVal', null)
-                if (this.allLp[i].stakeToken) {
-                    const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                    const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-                    const lpDecimals = await pool.methods.decimals().call()
-                    const showBalance = lpBalance / Math.pow(10, lpDecimals)
-                    this.allLp[i].lpBalance = showBalance.toFixed(lpDecimals)
-
-                    const farmContract = new web3.eth.Contract(farmAbi, this.allLp[i].stakeToken)
-                    const lpPrice = await this.getLpPrice(this.allLp[i].address)
-                    this.allLp[i].lpPrice = lpPrice
-                    const lpBalanceValue = lpPrice * lpBalance
-                    this.allLp[i].lpBalanceValue = lpBalanceValue
+                this.$set(this.allLp[i], 'approve', false)
+                this.$set(this.allLp[i], 'hideError', false)
+                this.$set(this.allLp[i], 'hideError2', false)
+                this.$set(this.allLp[i], 'loading', false)
+                this.$set(this.allLp[i], 'detailLoading', false)
+            }
+        },
+        async initList() {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allLp) {
+                this.$set(this.allLp[i], 'loading', true)
+                this.$set(this.allLp[i], 'close', true)
+            }
+            await this.getTokenScale()
+            for (const i in this.allLp) {
+                this.$set(this.allLp[i], 'pledgeVal', null)
+                this.$set(this.allLp[i], 'releaseVal', null)
+                this.$set(this.allLp[i], 'approve', false)
+                this.$set(this.allLp[i], 'hideError', false)
+                this.$set(this.allLp[i], 'hideError2', false)
+                this.$set(this.allLp[i], 'detailLoading', false)
+                this.allLp[i].loading = true
+                if (this.allLp[i].farmAddress) {
+                    // Total Value
+                    const farmContract = new web3.eth.Contract(farmAbi, this.allLp[i].farmAddress)
+                    const lpPrice = this.allLp[i].lpPrice
                     const totalSupply = await farmContract.methods.totalSupply().call()
                     const farmValue = lpPrice * totalSupply
                     this.allLp[i].farmValue = farmValue
-                    const periodFinish = await farmContract.methods.periodFinish().call()
-                    const now = new Date() // 获取当前时间
-                    const nowTime = Math.floor(now.getTime() / 1000)
-                    // 每秒产出JLS数量
-                    const rewardRate = await farmContract.methods.rewardRate().call()
-                    // 判断是否到期，到期后无奖励
-                    if (nowTime <= periodFinish) {
-                        if (this.allLp[i].farmValue) {
-                            // 一年总奖励
-                            const rewardRateYear = rewardRate * 3600 * 24 * 365
-                            const jlsPrice = this.getTokenPrice('JLS')
-                            const rewardRateYearValue = (rewardRateYear / Math.pow(10, 18)) * jlsPrice
-                            const apr = rewardRateYearValue / farmValue * 100
-                            const showApr = this.getAprShow(apr) + '%'
-                            this.allLp[i].apr = showApr
-                        } else { // 池子没有抵押资产
-                            this.allLp[i].apr = '∞'
-                        }
-                    } else if (nowTime > periodFinish) {
-                        this.allLp[i].apr = '0'
-                    }
 
                     // 每天产出
+                    const rewardRate = await farmContract.methods.rewardRate().call()
                     const rewardRateDay = rewardRate * 60 * 60 * 24 / Math.pow(10, 18)
                     this.allLp[i].rewardRate = rewardRateDay
 
-                    // 个人抵押lp数量
-                    const personLpNum = await farmContract.methods.balanceOf(this.fromAddress).call()
-                    const personLpNumShow = personLpNum / Math.pow(10, lpDecimals)
-                    this.allLp[i].personLpNum = personLpNumShow.toFixed(lpDecimals)
-                    this.allLp[i].personLpValue = personLpNum * lpPrice
+                    // APR
+                    const periodFinish = await farmContract.methods.periodFinish().call()
+                    const now = new Date()
+                    const nowTime = Math.floor(now.getTime() / 1000)
+                    if (nowTime <= periodFinish) { // 判断是否到期，到期后无奖励
+                        if (this.allLp[i].farmValue) {
+                            const rewardRateYear = rewardRate * 3600 * 24 * 365 // 一年总奖励
+                            const jlsPrice = await this.getTokenPrice(farmToken)
+                            const rewardRateYearValue = (rewardRateYear / Math.pow(10, 18)) * jlsPrice
+                            const apr = rewardRateYearValue / farmValue * 100
+                            const showApr = this.getAprShow(apr) + '%'
+                            this.$set(this.allLp[i], 'apr', showApr)
+                            // this.allLp[i].apr = showApr
+                        } else { // 池子没有抵押资产
+                            // this.allLp[i].apr = '∞'
+                            this.$set(this.allLp[i], 'apr', '∞')
+                        }
+                    } else if (nowTime > periodFinish) {
+                        // this.allLp[i].apr = '0'
+                        this.$set(this.allLp[i], 'apr', '0')
+                    }
+
+                    this.allLp[i].loading = false
                 }
             }
         },
@@ -275,53 +430,35 @@ export default {
             const time = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds
             return time
         },
-        // 获取lp单价
-        async getLpPrice(address) {
+        // 获取兑换比例
+        async getTokenScale() {
             const web3 = new Web3(window.ethereum)
-            const pool = new web3.eth.Contract(pairAbi, address)
-            const reserves = await pool.methods.getReserves().call()
-            const token0 = await pool.methods.token0().call()
-            const token1 = await pool.methods.token1().call()
-            const decimals0 = this.getTokenDecimals(token0)
-            const decimals1 = this.getTokenDecimals(token1)
-            const token0Num = reserves._reserve0 / Math.pow(10, decimals0)
-            const token1Num = reserves._reserve1 / Math.pow(10, decimals1)
-            const totalSupply = await pool.methods.totalSupply().call()
-            const exchangeRate = token1Num / token0Num
-            const name0 = this.getTokenName(token0)
-            const name1 = this.getTokenName(token1)
-            this.getBaseVal(name0, name1, exchangeRate)
-            const token0Price = this.getTokenPrice(name0)
-            const token1Price = this.getTokenPrice(name1)
-            const totalPrice = token0Num * token0Price + token1Num * token1Price
-            const lpPrice = totalPrice / totalSupply
-            return lpPrice
-        },
-        getTokenPrice(name) {
-            for (const i in this.allToken) {
-                if (this.allToken[i].name === name) {
-                    return this.allToken[i].baseVal
-                }
+            for (const i in this.allLp) {
+                const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+                const reserves = await scaleContract.methods.getReserves().call()
+                const token0 = await scaleContract.methods.token0().call()
+                const token1 = await scaleContract.methods.token1().call()
+                const decimals0 = this.getTokenDecimals(token0)
+                const decimals1 = this.getTokenDecimals(token1)
+                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                const exchangeRate = token1Balance / token0Balance
+                this.allLp[i].scale = exchangeRate
+                const name0 = this.getTokenName(token0)
+                const name1 = this.getTokenName(token1)
+                this.getBaseVal(name0, name1, exchangeRate)
+                const token0Price = this.getTokenPrice(name0)
+                const token1Price = this.getTokenPrice(name1)
+                const totalPrice = token0Balance * token0Price + token1Balance * token1Price
+                const totalSupply = await scaleContract.methods.totalSupply().call()
+                const lpPrice = totalPrice / totalSupply
+                this.allLp[i].lpPrice = lpPrice
             }
         },
-        // 获取token单价
-        getBaseVal(name0, name1, scale) {
+        getTokenPrice(name) {
             for (const i of this.allToken) {
-                if (i.name === 'USDC') {
-                    i.baseVal = 1
-                }
-                if (name0 === 'USDC') {
-                    if (i.name === name1) {
-                        i.baseVal = scale
-                    }
-                }
-                if (name0 === 'WMATIC' && name1 === 'USDC') {
-                    if (i.name === name0) {
-                        i.baseVal = 1 / scale
-                    }
-                    if (i.name === 'MATIC') {
-                        i.baseVal = 1 / scale
-                    }
+                if (i.name === name) {
+                    return i.baseVal
                 }
             }
         },
@@ -367,7 +504,7 @@ export default {
             if (Number(num) < 1 && Number(num) > 0) {
                 return num
             } else if (Number(num) >= 1) {
-                return Number(num).toFixed(5)
+                return Number(num).toFixed(2)
             } else {
                 return 0
             }
@@ -375,22 +512,17 @@ export default {
         // 初始化
         async init() {
             if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
-                const fromAddress = await web3.eth.getAccounts()
-                this.fromAddress = fromAddress[0]
-                utils.put('fromAddress', this.fromAddress)
                 if (this.fromAddress) {
-                    const netId = await web3.eth.getChainId()
-                    if (this.chainId === netId) {
-                        this.network = true
-                        utils.put('network', true)
+                    if (this.network) {
                         this.initList()
                     } else {
-                        this.network = false
-                        utils.put('network', false)
+                        this.connectWeb3()
                     }
+                } else {
+                    this.initNoUser()
                 }
             } else {
+                this.initNoUser()
                 console.log('请安装MetaMask钱包')
             }
         }
@@ -419,10 +551,10 @@ export default {
             flex:1;
         }
         .rightName{
-            text-align: right;
+            text-align: left;
             padding-right: 30px;
             // flex:0.6;
-            width: 70px;
+            width: 180px;
         }
         .second{
             flex:0.8;
@@ -475,9 +607,9 @@ export default {
                 }
             }
             .rightName{
-                text-align: right;
+                text-align: left;
                 // flex:0.6;
-                width: 70px;
+                width: 180px;
                 padding-right: 30px;
                 font-size: 16px;
                 color: rgba(0,0,0,0.85);
@@ -567,15 +699,15 @@ export default {
                     flex:1;
                     padding:0 20px;
                     display: flex;
-                    .farmLeft,.farmRight{
+                    .farmLeft,.farmMiddle,.farmRight{
                         flex:1;
+                        width: 0;
+                        flex-shrink: 0;
                     }
-                    .farmLeft{
-                        padding-right: 15px;
+                    .farmMiddle{
+                        margin:0 15px;
                     }
-                    .farmRight{
-                        padding-left: 15px;
-                    }
+
                     .balanceTip{
                         font-size: 14px;
                         color: rgba(0,0,0,0.85);
@@ -604,11 +736,36 @@ export default {
                             cursor: pointer;
                         }
                     }
+                    .pledgeInputDiv2{
+                        height: 50px;
+                        border-radius: 5px;
+                        box-sizing: border-box;
+                        display: flex;
+                        align-items: center;
+                        padding:0 15px;
+                        font-size: 18px;
+                    }
                     .pledgeBtn{
                         height: 50px;
                         background: #E02020;
                         border-radius: 5px;
                         color:#fff;
+                        font-size: 18px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-top: 15px;
+                        cursor: pointer;
+                    }
+                    .disableBtn{
+                        background: #E9EEF4;
+                        color: rgba(18, 18, 18, 0.17);
+                    }
+                    .errorBtn{
+                        height: 50px;
+                        background: #E9EEF4;
+                        border-radius: 5px;
+                        color: rgba(18, 18, 18, 0.17);
                         font-size: 18px;
                         display: flex;
                         align-items: center;

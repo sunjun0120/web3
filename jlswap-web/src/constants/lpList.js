@@ -4,7 +4,7 @@ export const lpList = [
         from: 'USDC',
         to: 'USDT',
         address: '0xcDcA692844c104dffC41Fd9B9a8797A17B922a42',
-        stakeToken: '0x9992e4c034ba8304d931cdbab0a1092fe070bb16'
+        farmAddress: '0x9992e4c034ba8304d931cdbab0a1092fe070bb16'
     },
     {
         name: 'WMATIC-USDC',

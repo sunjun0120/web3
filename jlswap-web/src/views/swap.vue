@@ -70,7 +70,7 @@
                     </div>
                 </div>
             </div>
-            <div class="connectWallet" @click="connect" v-if="!fromAddress">Connect Wallet</div>
+            <div class="connectWallet" @click="connectWallet" v-if="!fromAddress">Connect Wallet</div>
             <div class="showSwapBtn" v-else>
                 <div v-if="network">
                     <div class="errorTip" v-if="showError">{{getMessage()}}</div>
@@ -82,7 +82,7 @@
                                 <div :class="swapE?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale"></div>
                             </div>
                         </div>
-                        <div class="approveBtn" @click="approve" v-if="token1!=='MATIC'">approve</div>
+                        <div class="approveBtn" @click="approve" v-if="token1!==nativeToken">approve</div>
                         <div class="approveBtn" @click="confirm" v-else>confirm</div>
                     </div>
                 </div>
@@ -141,16 +141,16 @@
 </template>
 <script>
 import Web3 from 'web3'
-import utils from '../utils/storage'
-import { chainId } from '../constants/common'
+import { chainId, nativeToken, farmToken, nativeToErc20Token } from '../constants/common'
 import ConfirmWait from '../components/swap/waitDia.vue'
 import ConfirmSuccess from '../components/swap/success.vue'
 import ConfirmFail from '../components/swap/fail.vue'
 import ChangeToken from '../components/swap/changeToken.vue'
-import { tokenList } from '../constants/tokens'
-import { lpList } from '../constants/lpList'
+
+import { mapState, mapActions } from 'pinia'
+import { baseInfoStore } from '../store/index'
+
 import { ERC20 } from '../constants/abi/ERC20'
-import { pairAbi } from '../constants/abi/pairAbi'
 import { routerAbi } from '../constants/abi/routerAbi'
 import { wmaticAbi } from '../constants/abi/wmaticAbi'
 import C from '../constants/contractAddress'
@@ -161,8 +161,8 @@ export default {
     },
     data () {
         return {
-            token1: 'MATIC',
-            token2: 'JLS',
+            token1: nativeToken,
+            token2: farmToken,
             balance1: 0,
             balance2: 0,
             tokenVal1: null,
@@ -171,18 +171,28 @@ export default {
             swapE: false,
             swapE2: false,
             showAuto: false,
-            // showError: true,
             confirmExchange: false,
-            network: utils.load('network'),
-            fromAddress: utils.load('fromAddress'),
-            allToken: tokenList,
-            allLp: lpList,
             loading: false,
             settings: 0.5,
-            chainId: chainId
+            chainId: chainId,
+            nativeToken: nativeToken
+        }
+    },
+    computed: {
+        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken']),
+        showError() {
+            if (this.tokenVal1 && Number(this.tokenVal1) !== 0 && (this.tokenVal1 <= this.balance1) && this.tokenVal2) {
+                return false
+            } else {
+                return true
+            }
         }
     },
     methods: {
+        ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'connect', 'connectWeb3', 'getTokenScale']),
+        connectWallet() {
+            this.connect()
+        },
         async changeToken(val) {
             if (val === 1) {
                 this.$refs.changeToken.show1(this.token1, this.token2)
@@ -202,22 +212,25 @@ export default {
             this.tokenVal1 = null
             this.tokenVal2 = null
         },
-        limitToken1() {
+        async limitToken1() {
+            await this.getTokenScale()
             this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
         },
-        limitToken2() {
+        async limitToken2() {
+            await this.getTokenScale()
             this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
         },
-        getAllSwap(val) {
+        async getAllSwap(val) {
             if (val) {
                 this.tokenVal1 = val
+                await this.getTokenScale()
                 this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
             }
         },
         getImg(val) {
-            for (const i in this.allToken) {
-                if (this.allToken[i].name === val) {
-                    return this.allToken[i].icon
+            for (const i of this.allToken) {
+                if (i.name === val) {
+                    return i.icon
                 }
             }
         },
@@ -298,19 +311,19 @@ export default {
                     tokenAddress2 = i.address
                     decimals2 = i.decimals
                 }
-                if (this.token1 === 'MATIC') {
-                    if (i.name === 'WMATIC') {
+                if (this.token1 === nativeToken) {
+                    if (i.name === nativeToErc20Token) {
                         tokenAddress1 = i.address
                         decimals1 = i.decimals
                     }
                 }
-                if (this.token2 === 'MATIC') {
-                    if (i.name === 'WMATIC') {
+                if (this.token2 === nativeToken) {
+                    if (i.name === nativeToErc20Token) {
                         tokenAddress2 = i.address
                         decimals2 = i.decimals
                     }
                 }
-                if (i.name === 'WMATIC') {
+                if (i.name === nativeToErc20Token) {
                     wmaticAddress = i.address
                 }
             }
@@ -328,7 +341,7 @@ export default {
             const amountOutMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance2))).toString(), 'wei')
             let tx
             const wmaticContract = new web3.eth.Contract(wmaticAbi, wmaticAddress)
-            if (this.token1 === 'MATIC' && this.token2 === 'WMATIC') {
+            if (this.token1 === nativeToken && this.token2 === nativeToErc20Token) {
                 tx = await wmaticContract.methods.deposit()
                 const that = this
                 await web3.eth.sendTransaction({
@@ -357,7 +370,7 @@ export default {
                         that.getStatus(hash)
                     }
                 })
-            } else if (this.token2 === 'MATIC' && this.token1 === 'WMATIC') {
+            } else if (this.token2 === nativeToken && this.token1 === nativeToErc20Token) {
                 tx = await wmaticContract.methods.withdraw(amountIn)
                 const that = this
                 await web3.eth.sendTransaction({
@@ -383,7 +396,7 @@ export default {
                     }
                 })
             } else {
-                if (this.token1 === 'MATIC') { // native -> erc20
+                if (this.token1 === nativeToken) { // native -> erc20
                     const path = [tokenAddress1, tokenAddress2]
                     tx = await routerContract.methods.swapExactETHForTokens(amountOutMin, path, this.fromAddress, deadline)
                     const that = this
@@ -416,7 +429,7 @@ export default {
                             that.getStatus(hash)
                         }
                     })
-                } else if (this.token1 !== 'MATIC' && this.token2 !== 'MATIC') { // erc20 -> erc20
+                } else if (this.token1 !== nativeToken && this.token2 !== nativeToken) { // erc20 -> erc20
                     const path = [tokenAddress1, tokenAddress2]
                     tx = await routerContract.methods.swapExactTokensForTokens(amountIn, amountOutMin, path, this.fromAddress, deadline)
                     const that = this
@@ -445,7 +458,7 @@ export default {
                             that.getStatus(hash)
                         }
                     })
-                } else if (this.token2 === 'MATIC') { // erc20 -> native
+                } else if (this.token2 === nativeToken) { // erc20 -> native
                     const path = [tokenAddress1, tokenAddress2]
                     tx = await routerContract.methods.swapExactTokensForETH(amountIn, amountOutMin, path, this.fromAddress, deadline)
                     const that = this
@@ -499,7 +512,7 @@ export default {
                             title: 'Transaction success',
                             type: 'success'
                         })
-                        that.init()
+                        that.getSwapBalance()
                     } else {
                         that.$notify.error({
                             title: 'Transaction fail'
@@ -521,93 +534,6 @@ export default {
                 }
             }
         },
-        connect() {
-            if (window.ethereum) {
-                const that = this
-                window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
-                    that.fromAddress = res[0]
-                    utils.put('fromAddress', that.fromAddress)
-                    that.connectWeb3()
-                })
-            } else {
-                // 唤起失败，跳转metaMask
-                window.open('https://metamask.io/')
-            }
-        },
-        // 连接web3,切换节点
-        async connectWeb3() {
-            if (window.ethereum) {
-                const that = this
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{
-                            chainId: Web3.utils.numberToHex(that.chainId) // 目标链ID
-                        }]
-                    })
-                    that.network = true
-                    utils.put('network', true)
-                } catch (e) {
-                    console.log(e.code)
-                    if (e.code === 4902) {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [
-                                    {
-                                        chainId: Web3.utils.numberToHex(that.chainId),
-                                        chainName: 'Polygon',
-                                        nativeCurrency: {
-                                            name: 'matic',
-                                            symbol: 'MATIC',
-                                            decimals: 18
-                                        },
-                                        rpcUrls: ['https://polygon.llamarpc.com'],
-                                        blockExplorerUrls: ['https://polygonscan.com']
-                                    }
-                                ]
-                            })
-                            that.network = true
-                            utils.put('network', true)
-                        } catch (error) {
-                        }
-                    } else if (e.code === 4001) {
-
-                    } else {
-                        that.network = false
-                        utils.put('network', false)
-                    }
-                }
-            }
-        },
-        // 监听账户切换
-        onChangeAccount() {
-            if (window.ethereum) {
-                const that = this
-                window.ethereum.on('accountsChanged', function(res) {
-                    that.fromAddress = res[0]
-                    utils.put('fromAddress', that.fromAddress)
-                    that.init()
-                })
-            }
-        },
-        // 监听链是否正确
-        onChangeChain() {
-            if (window.ethereum) {
-                const that = this
-                window.ethereum.on('chainChanged', function(val) {
-                    const chainId = Web3.utils.numberToHex(that.chainId)
-                    if (val !== chainId) {
-                        that.network = false
-                        utils.put('network', false)
-                    } else {
-                        that.network = true
-                        utils.put('network', true)
-                        that.init()
-                    }
-                })
-            }
-        },
         // 保留5位小数
         getShowBalance(val) {
             const balance = Math.round(val * Math.pow(10, 5)) / Math.pow(10, 5)
@@ -624,32 +550,17 @@ export default {
         },
         // 获取所有代币余额
         async getAllBalance() {
-            if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
-                if (this.fromAddress) {
-                    const netId = await web3.eth.getChainId()
-                    if (this.chainId === netId) {
-                        for (const i of this.allToken) {
-                            if (i.name === 'MATIC') { // 原生币通过钱包获取余额
-                                web3.eth.getBalance(this.fromAddress, (err, res) => {
-                                    if (!err) {
-                                        const balance = res / Math.pow(10, 18)
-                                        i.balance = balance
-                                    }
-                                })
-                            } else {
-                                if (i.address) {
-                                    i.balance = await this.getTokenBalance(i.address, i.decimals)
-                                } else {
-                                    i.balance = 0
-                                }
-                            }
+            const web3 = new Web3(window.ethereum)
+            for (const i of this.allToken) {
+                if (i.name === nativeToken) { // 原生币通过钱包获取余额
+                    web3.eth.getBalance(this.fromAddress, (err, res) => {
+                        if (!err) {
+                            const balance = res / Math.pow(10, i.decimals)
+                            i.balance = balance
                         }
-                    }
+                    })
                 } else {
-                    for (const i of this.allToken) {
-                        i.balance = 0
-                    }
+                    i.balance = await this.getTokenBalance(i.address, i.decimals)
                 }
             }
         },
@@ -666,25 +577,6 @@ export default {
                 return '1 ' + this.token2 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token1
             }
         },
-        // 获取兑换比例
-        async getTokenScale() {
-            const web3 = new Web3(window.ethereum)
-            for (const i in this.allLp) {
-                const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                const reserves = await scaleContract.methods.getReserves().call()
-                const token0 = await scaleContract.methods.token0().call()
-                const token1 = await scaleContract.methods.token1().call()
-                const decimals0 = this.getTokenDecimals(token0)
-                const decimals1 = this.getTokenDecimals(token1)
-                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
-                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
-                const exchangeRate = token1Balance / token0Balance
-                this.allLp[i].scale = exchangeRate
-                const name0 = this.getTokenName(token0)
-                const name1 = this.getTokenName(token1)
-                this.getBaseVal(name0, name1, exchangeRate)
-            }
-        },
         // 获取能接受的最小值
         getMinAvailable() {
             const token1Scale = this.getScale(this.token1)
@@ -692,39 +584,12 @@ export default {
             const tokenVal = Number(this.tokenVal1) * (token2Scale / token1Scale) * (1 - this.settings / 100)
             return this.getShowBalance(tokenVal)
         },
-        getBaseVal(name0, name1, scale) {
-            for (const i of this.allToken) {
-                if (i.name === 'USDC') {
-                    i.baseVal = 1
-                }
-                if (name0 === 'USDC') {
-                    if (i.name === name1) {
-                        i.baseVal = scale
-                    }
-                }
-                if (name0 === 'WMATIC' && name1 === 'USDC') {
-                    if (i.name === name0) {
-                        i.baseVal = 1 / scale
-                    }
-                    if (i.name === 'MATIC') {
-                        i.baseVal = 1 / scale
-                    }
-                }
-            }
-        },
+
         getTokenName(val) {
             const web3 = new Web3(window.ethereum)
             for (const i in this.allToken) {
                 if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
                     return this.allToken[i].name
-                }
-            }
-        },
-        getTokenDecimals(val) {
-            const web3 = new Web3(window.ethereum)
-            for (const i in this.allToken) {
-                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
-                    return this.allToken[i].decimals
                 }
             }
         },
@@ -746,55 +611,77 @@ export default {
                 return this.getShowBalance(tokenVal)
             }
         },
+        initInfo() {
+            this.balance1 = 0
+            this.balance2 = 0
+            this.tokenVal1 = null
+            this.tokenVal2 = null
+        },
+        // 监听账户切换
+        onChangeAccount() {
+            if (window.ethereum) {
+                const that = this
+                window.ethereum.on('accountsChanged', function(res) {
+                    that.changeFromAddress(res[0])
+                    if (res[0]) {
+                        that.init()
+                    } else {
+                        that.initInfo()
+                    }
+                })
+            }
+        },
+        // 监听链是否正确
+        onChangeChain() {
+            if (window.ethereum) {
+                const that = this
+                window.ethereum.on('chainChanged', function(val) {
+                    const chainId = Web3.utils.numberToHex(that.chainId)
+                    if (val !== chainId) {
+                        that.changeNetwork(false)
+                        that.initInfo()
+                    } else {
+                        that.changeNetwork(true)
+                        that.init()
+                    }
+                })
+            }
+        },
+        // 获取页面余额
+        async getSwapBalance() {
+            await this.getAllBalance()
+            this.tokenVal1 = null
+            this.tokenVal2 = null
+            const a = this.token1
+            const b = this.token2
+            for (const i of this.allToken) {
+                if (i.name === a) {
+                    this.balance1 = i.balance
+                }
+                if (i.name === b) {
+                    this.balance2 = i.balance
+                }
+            }
+        },
         // 初始化
         async init() {
+            // 获取兑换比例
             if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
-                const fromAddress = await web3.eth.getAccounts()
-                this.fromAddress = fromAddress[0]
-                utils.put('fromAddress', this.fromAddress)
                 if (this.fromAddress) {
-                    const netId = await web3.eth.getChainId()
-                    if (this.chainId === netId) {
-                        this.network = true
-                        utils.put('network', true)
+                    if (this.network) {
                         this.loading = true
                         // 获取余额
-                        await this.getAllBalance()
-                        // 获取兑换比例
-                        this.getTokenScale()
-                        this.tokenVal1 = null
-                        this.tokenVal2 = null
-                        const a = this.token1
-                        const b = this.token2
-                        for (const i of this.allToken) {
-                            if (i.name === a) {
-                                this.balance1 = i.balance
-                            } else if (i.name === b) {
-                                this.balance2 = i.balance
-                            }
-                        }
+                        await this.getSwapBalance()
                         this.loading = false
                     } else {
-                        this.network = false
-                        utils.put('network', false)
                         this.connectWeb3()
                     }
                 } else {
-                    this.balance1 = 0
-                    this.balance2 = 0
+                    this.initInfo()
                 }
             } else {
+                this.initInfo()
                 console.log('请安装MetaMask钱包')
-            }
-        }
-    },
-    computed: {
-        showError() {
-            if (this.tokenVal1 && Number(this.tokenVal1) !== 0 && (this.tokenVal1 <= this.balance1) && this.tokenVal2) {
-                return false
-            } else {
-                return true
             }
         }
     },
@@ -809,13 +696,6 @@ export default {
                 this.showAuto = false
             }
         }
-        // tokenVal1(newV, oldV) {
-        //     if (newV && Number(newV) !== 0 && (newV <= this.balance1)) {
-        //         this.showError = false
-        //     } else {
-        //         this.showError = true
-        //     }
-        // }
     }
 }
 </script>

@@ -21,20 +21,23 @@
 <script>
 import Web3 from 'web3'
 import { ERC20 } from '../../constants/abi/ERC20'
-import { tokenList } from '../../constants/tokens'
-import { chainId } from '../../constants/common'
+import { nativeToken } from '../../constants/common'
+
+import { mapState } from 'pinia'
+import { baseInfoStore } from '../../store/index'
+
 export default {
     name: '',
     data () {
         return {
             tokenListShow: false,
-            fromAddress: '',
-            chainId: chainId,
             tableData: [],
-            allToken: tokenList,
             switchToken: 1,
             loading: true
         }
+    },
+    computed: {
+        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken'])
     },
     methods: {
         async show1(token1, token2) {
@@ -86,13 +89,10 @@ export default {
         async getAllBalance() {
             if (window.ethereum) {
                 const web3 = new Web3(window.ethereum)
-                const fromAddress = await web3.eth.getAccounts()
-                this.fromAddress = fromAddress[0]
                 if (this.fromAddress) {
-                    const netId = await web3.eth.getChainId()
-                    if (this.chainId === netId) {
+                    if (this.network) {
                         for (const i of this.allToken) {
-                            if (i.name === 'MATIC') { // 原生币通过钱包获取余额
+                            if (i.name === nativeToken) { // 原生币通过钱包获取余额
                                 web3.eth.getBalance(this.fromAddress, (err, res) => {
                                     if (!err) {
                                         const balance = res / Math.pow(10, 18)
@@ -100,11 +100,7 @@ export default {
                                     }
                                 })
                             } else {
-                                if (i.address) {
-                                    i.balance = await this.getTokenBalance(i.address, i.decimals)
-                                } else {
-                                    i.balance = 0
-                                }
+                                i.balance = await this.getTokenBalance(i.address, i.decimals)
                             }
                         }
                     }

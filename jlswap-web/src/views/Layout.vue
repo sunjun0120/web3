@@ -3,7 +3,9 @@
         <el-container class="home">
             <el-header class="header" height="70px">
                 <div class="left">
-                    <div class="logoImg"></div>
+                    <div class="logoImg">
+                        <img :src="getImg()" alt="">
+                    </div>
                     <div class="logo">JLSwap</div>
                     <div class="menus">
                         <el-menu class="menu"
@@ -37,7 +39,7 @@
                 </div>
                 <div class="right">
                     <div class="all money">TVL<span class="moneyNum">{{all}}</span></div>
-                    <div class="money">JLS<span  class="moneyNum">{{surplus}}</span></div>
+                    <div class="money">JLS<span  class="moneyNum">{{farmTokenPrice}}</span></div>
                     <div class="connectWallet" @click="connect" v-if="!fromAddress">Connect Wallet</div>
                     <div v-else>
                         <div class='userAddress' v-if="network">{{showFrom(fromAddress)}}</div>
@@ -54,9 +56,11 @@
     </div>
 </template>
 <script>
+import { chainId, farmToken } from '../constants/common'
 import Web3 from 'web3'
-import utils from '../utils/storage'
-import { chainId } from '../constants/common'
+import { mapState, mapActions } from 'pinia'
+import { baseInfoStore } from '../store/index'
+import { pairAbi } from '../constants/abi/pairAbi'
 export default {
     name: '',
     data () {
@@ -81,84 +85,57 @@ export default {
                     ]
                 }
             ],
+            farmToken: farmToken,
             all: '$0.00',
-            surplus: '$0.00',
-            network: utils.load('network'),
-            fromAddress: utils.load('fromAddress'),
-            chainId: chainId // Polygon Mainnet
+            farmTokenPrice: '$0.00',
+            chainId: chainId
+        }
+    },
+    computed: {
+        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'allLp']),
+        currentActivePath () {
+            const path = this.$route.path
+            const params = this.$route.params
+            if (!Object.keys(params).length) {
+                return path
+            } else {
+                return `/${path.split('/')[1]}`
+            }
         }
     },
     methods: {
-        // 连接钱包
-        connect() {
-            if (window.ethereum) {
-                const that = this
-                window.ethereum.request({ method: 'eth_requestAccounts' }).then(res => {
-                    that.fromAddress = res[0]
-                    utils.put('fromAddress', that.fromAddress)
-                    that.connectWeb3()
-                })
-            } else {
-                // 唤起失败，跳转metaMask
-                window.open('https://metamask.io/')
-            }
-        },
-        // 连接web3,切换节点
-        async connectWeb3() {
-            if (window.ethereum) {
-                const that = this
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{
-                            chainId: Web3.utils.numberToHex(that.chainId) // 目标链ID
-                        }]
-                    })
-                    that.network = true
-                    utils.put('network', true)
-                } catch (e) {
-                    console.log(e.code)
-                    if (e.code === 4902) {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [
-                                    {
-                                        chainId: Web3.utils.numberToHex(that.chainId),
-                                        chainName: 'Polygon',
-                                        nativeCurrency: {
-                                            name: 'matic',
-                                            symbol: 'MATIC',
-                                            decimals: 18
-                                        },
-                                        rpcUrls: ['https://polygon.llamarpc.com'],
-                                        blockExplorerUrls: ['https://polygonscan.com']
-                                    }
-                                ]
-                            })
-                            that.network = true
-                            utils.put('network', true)
-                        } catch (error) {
-                        }
-                    } else if (e.code === 4001) {
-
-                    } else {
-                        that.network = false
-                        utils.put('network', false)
-                    }
-                }
-            }
-        },
-        // 获取钱包余额
-        async getBalance() {
+        ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'getTokenScale', 'connect']),
+        // 获取精度
+        getTokenDecimals(val) {
             const web3 = new Web3(window.ethereum)
-            const fromAddress = await web3.eth.getAccounts()
-            console.log(web3.currentProvider)
-            web3.eth.getBalance(fromAddress[0], (err, res) => {
-                if (!err) {
-                    console.log('余额：' + res / Math.pow(10, 18))
+            for (const i in this.allToken) {
+                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
+                    return this.allToken[i].decimals
                 }
-            })
+            }
+        },
+        getTokenPrice(name) {
+            for (const i of this.allToken) {
+                if (i.name === name) {
+                    return i.baseVal
+                }
+            }
+        },
+        getImg() {
+            for (const i of this.allToken) {
+                if (i.name === this.farmToken) {
+                    return i.icon
+                }
+            }
+        },
+        // 获取tokenName
+        getTokenName(val) {
+            const web3 = new Web3(window.ethereum)
+            for (const i in this.allToken) {
+                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
+                    return this.allToken[i].name
+                }
+            }
         },
         // 展示地址
         showFrom(val) {
@@ -168,13 +145,58 @@ export default {
                 return ''
             }
         },
+        async getTvl() {
+            const web3 = new Web3(window.ethereum)
+            let tvl = 0
+            for (const i in this.allLp) {
+                const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+                const reserves = await pool.methods.getReserves().call()
+                const token0 = await pool.methods.token0().call()
+                const token1 = await pool.methods.token1().call()
+                const decimals0 = this.getTokenDecimals(token0)
+                const decimals1 = this.getTokenDecimals(token1)
+                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                const name0 = this.getTokenName(token0)
+                const name1 = this.getTokenName(token1)
+                const token0Price = this.getTokenPrice(name0)
+                const token1Price = this.getTokenPrice(name1)
+                const lpValue = token0Balance * token0Price + token1Balance * token1Price
+                tvl = tvl + lpValue
+            }
+            const tvlValue = parseInt(tvl).toLocaleString()
+            this.all = '$' + tvlValue
+        },
+        async init() {
+            // 初始化
+            if (this.fromAddress) {
+                if (this.network) {
+                    await this.getTokenScale()
+                    this.getTvl()
+                    for (const i of this.allToken) {
+                        if (i.name === farmToken) {
+                            const jlsPrice = i.baseVal
+                            const decimals = i.decimals
+                            const surplusVal = '$' + (jlsPrice / Math.pow(10, decimals)).toFixed(decimals)
+                            this.farmTokenPrice = surplusVal
+                        }
+                    }
+                } else {
+                    this.farmTokenPrice = '$0.00'
+                    this.all = '$0.00'
+                }
+            } else {
+                this.farmTokenPrice = '$0.00'
+                this.all = '$0.00'
+            }
+        },
         // 监听账户切换
         onChangeAccount() {
             if (window.ethereum) {
                 const that = this
                 window.ethereum.on('accountsChanged', function(res) {
-                    that.fromAddress = res[0]
-                    utils.put('fromAddress', that.fromAddress)
+                    that.changeFromAddress(res[0])
+                    that.init()
                 })
             }
         },
@@ -185,43 +207,28 @@ export default {
                 window.ethereum.on('chainChanged', function(val) {
                     const chainId = Web3.utils.numberToHex(that.chainId)
                     if (val !== chainId) {
-                        console.log('链id:' + Web3.utils.hexToNumber(val))
-                        that.network = false
-                        utils.put('network', false)
+                        that.changeNetwork(false)
+                        that.farmTokenPrice = '$0.00'
+                        that.all = '$0.00'
                     } else {
-                        that.network = true
-                        utils.put('network', true)
-                        console.log('网络切换正确！')
+                        that.changeNetwork(true)
+                        that.init()
                     }
                 })
             }
-        },
-        async init() {
-            // 获取账户信息
-            if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
-                const fromAddress = await web3.eth.getAccounts()
-                this.fromAddress = fromAddress[0]
-                utils.put('fromAddress', this.fromAddress)
-                const netId = await web3.eth.getChainId()
-                if (this.chainId === netId) {
-                    this.network = true
-                } else {
-                    this.network = false
-                }
-            } else {
-                console.log('请安装MetaMask钱包')
-            }
         }
     },
-    computed: {
-        currentActivePath () {
-            const path = this.$route.path
-            const params = this.$route.params
-            if (!Object.keys(params).length) {
-                return path
-            } else {
-                return `/${path.split('/')[1]}`
+    watch: {
+        fromAddress(newVal, oldVal) {
+            if (!newVal) {
+                this.farmTokenPrice = '$0.00'
+                this.all = '$0.00'
+            }
+        },
+        network(newVal, oldVal) {
+            if (!newVal) {
+                this.farmTokenPrice = '$0.00'
+                this.all = '$0.00'
             }
         }
     },
@@ -258,9 +265,12 @@ export default {
                     width: 40px;
                     height: 40px;
                     border-radius: 50%;
-                    background: url('../assets/JLS.png') no-repeat;
-                    background-size: 100% 100%;
                     margin-left: 3.125vw;
+                    img{
+                        width: 100%;
+                        height: 100%;
+                        border-radius: 50%;
+                    }
                 }
             }
             .right{

@@ -21,7 +21,9 @@
 <script>
 import Web3 from 'web3'
 import { ERC20 } from '../../constants/abi/ERC20'
-import { tokenList } from '../../constants/tokens'
+import { nativeToken, nativeToErc20Token } from '../../constants/common'
+import { mapState } from 'pinia'
+import { baseInfoStore } from '../../store/index'
 export default {
     name: '',
     data () {
@@ -29,10 +31,11 @@ export default {
             tokenListShow: false,
             tableData: [],
             switchToken: 1,
-            fromAddress: '',
-            allToken: tokenList,
             loading: true
         }
+    },
+    computed: {
+        ...mapState(baseInfoStore, ['fromAddress', 'allToken'])
     },
     methods: {
         async show1(token1, token2) {
@@ -43,10 +46,10 @@ export default {
                 } else {
                     this.tableData[i].disable = false
                 }
-                if ((token2 === 'WMATIC' || token2 === 'MATIC') && this.tableData[i].name === 'WMATIC') {
+                if ((token2 === nativeToErc20Token || token2 === nativeToken) && this.tableData[i].name === nativeToErc20Token) {
                     this.tableData[i].disable = true
                 }
-                if ((token2 === 'WMATIC' || token2 === 'MATIC') && this.tableData[i].name === 'MATIC') {
+                if ((token2 === nativeToErc20Token || token2 === nativeToken) && this.tableData[i].name === nativeToken) {
                     this.tableData[i].disable = true
                 }
             }
@@ -64,10 +67,10 @@ export default {
                 } else {
                     this.tableData[i].disable = false
                 }
-                if ((token1 === 'WMATIC' || token1 === 'MATIC') && this.tableData[i].name === 'WMATIC') {
+                if ((token1 === nativeToErc20Token || token1 === nativeToken) && this.tableData[i].name === nativeToErc20Token) {
                     this.tableData[i].disable = true
                 }
-                if ((token1 === 'WMATIC' || token1 === 'MATIC') && this.tableData[i].name === 'MATIC') {
+                if ((token1 === nativeToErc20Token || token1 === nativeToken) && this.tableData[i].name === nativeToken) {
                     this.tableData[i].disable = true
                 }
             }
@@ -96,22 +99,16 @@ export default {
         async getAllBalance() {
             if (window.ethereum) {
                 const web3 = new Web3(window.ethereum)
-                const fromAddress = await web3.eth.getAccounts()
-                this.fromAddress = fromAddress[0]
                 for (const i of this.allToken) {
-                    if (i.name === 'MATIC') { // 原生币通过钱包获取余额
-                        web3.eth.getBalance(fromAddress[0], (err, res) => {
+                    if (i.name === nativeToken) { // 原生币通过钱包获取余额
+                        web3.eth.getBalance(this.fromAddress, (err, res) => {
                             if (!err) {
                                 const balance = res / Math.pow(10, 18)
                                 i.balance = balance
                             }
                         })
                     } else {
-                        if (i.address) {
-                            i.balance = await this.getTokenBalance(i.address, i.decimals)
-                        } else {
-                            i.balance = 0
-                        }
+                        i.balance = await this.getTokenBalance(i.address, i.decimals)
                     }
                 }
             }
