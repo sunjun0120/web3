@@ -127,7 +127,7 @@
                     <div class="right">{{ settings }}%</div>
                 </div>
 
-                <div class="confirmBtn" @click="sureConfirm">confirm supply</div>
+                <div class="confirmBtn" @click="sureConfirm">Confirm Supply</div>
             </div>
         </el-dialog>
         <change-token ref="changeToken" @changeToken1='changeToken1' @changeToken2='changeToken2'></change-token>
