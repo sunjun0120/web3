@@ -169,7 +169,16 @@ export default {
         },
         async init() {
             // 初始化
+            const web3 = new Web3(window.ethereum)
+            const accountAddress = await web3.eth.getAccounts()
+            this.changeFromAddress(accountAddress[0])
             if (this.fromAddress) {
+                const chainAddress = await web3.eth.getChainId()
+                if (chainAddress.toString() === this.chainId.toString()) {
+                    this.changeNetwork(true)
+                } else {
+                    this.changeNetwork(false)
+                }
                 if (this.network) {
                     await this.getTokenScale()
                     this.getTvl()

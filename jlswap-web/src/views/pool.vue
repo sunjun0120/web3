@@ -90,7 +90,7 @@ export default {
         ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'allLp'])
     },
     methods: {
-        ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'getTokenScale', 'connect']),
+        ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'connect']),
         goback() {
             this.showAdd = 0
             this.init()
@@ -234,7 +234,16 @@ export default {
         // 初始化
         async init() {
             if (window.ethereum) {
+                const web3 = new Web3(window.ethereum)
+                const accountAddress = await web3.eth.getAccounts()
+                this.changeFromAddress(accountAddress[0])
                 if (this.fromAddress) {
+                    const chainAddress = await web3.eth.getChainId()
+                    if (chainAddress.toString() === this.chainId.toString()) {
+                        this.changeNetwork(true)
+                    } else {
+                        this.changeNetwork(false)
+                    }
                     if (this.network) {
                         // this.getTokenScale()
                         this.initList()
