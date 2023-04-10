@@ -563,7 +563,7 @@ export default {
             text-align: left;
             padding-right: 30px;
             // flex:0.6;
-            width: 180px;
+            width: 100px;
         }
         .second{
             flex:0.8;
@@ -618,7 +618,7 @@ export default {
             .rightName{
                 text-align: left;
                 // flex:0.6;
-                width: 180px;
+                width: 100px;
                 padding-right: 30px;
                 font-size: 16px;
                 color: rgba(0,0,0,0.85);

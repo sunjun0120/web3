@@ -93,7 +93,7 @@ export default {
 .jlswap-farm{
     .middle{
         .el-tabs{
-            padding:0 13vw;
+            padding:0 10vw;
             .el-tabs__nav-wrap::after{
                 height:0;
             }
