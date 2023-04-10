@@ -141,7 +141,7 @@
 </template>
 <script>
 import Web3 from 'web3'
-import { chainId, nativeToken, farmToken, nativeToErc20Token } from '../constants/common'
+import { chainId, nativeToken, farmToken, nativeToErc20Token, erc20Token1, erc20Token2 } from '../constants/common'
 import ConfirmWait from '../components/swap/waitDia.vue'
 import ConfirmSuccess from '../components/swap/success.vue'
 import ConfirmFail from '../components/swap/fail.vue'
@@ -244,15 +244,15 @@ export default {
                     const address1 = this.getAddress(nativeToErc20Token)
                     let address2
                     let address3
-                    if (this.token2 === 'USDC') { // MATIC -> USDC
-                        address2 = this.getAddress('USDT') // MATIC -> USDT-> USDC
-                        address3 = this.getAddress('JLS')// MATIC -> JLS-> USDC
-                    } else if (this.token2 === 'USDT') { // MATIC -> USDT
-                        address2 = this.getAddress('USDC') // MATIC -> USDC-> USDT
-                        address3 = this.getAddress('JLS')// MATIC -> JLS-> USDT
-                    } else if (this.token2 === 'JLS') { // MATIC -> JLS
-                        address2 = this.getAddress('USDC') // MATIC -> USDC-> JLS
-                        address3 = this.getAddress('USDT')// MATIC -> USDT-> JLS
+                    if (this.token2 === erc20Token1) { // MATIC -> USDC
+                        address2 = this.getAddress(erc20Token2) // MATIC -> USDT-> USDC
+                        address3 = this.getAddress(farmToken)// MATIC -> JLS-> USDC
+                    } else if (this.token2 === erc20Token2) { // MATIC -> USDT
+                        address2 = this.getAddress(erc20Token1) // MATIC -> USDC-> USDT
+                        address3 = this.getAddress(farmToken)// MATIC -> JLS-> USDT
+                    } else if (this.token2 === farmToken) { // MATIC -> JLS
+                        address2 = this.getAddress(erc20Token1) // MATIC -> USDC-> JLS
+                        address3 = this.getAddress(erc20Token2)// MATIC -> USDT-> JLS
                     }
                     if (index === 1) {
                         path1 = [address1, address2, tokenAddress2]
@@ -268,15 +268,15 @@ export default {
                     const address3 = this.getAddress(nativeToErc20Token)
                     let address1
                     let address2
-                    if (this.token1 === 'USDC') {
-                        address1 = this.getAddress('USDT')
-                        address2 = this.getAddress('JLS')
-                    } else if (this.token1 === 'USDT') {
-                        address1 = this.getAddress('USDC')
-                        address2 = this.getAddress('JLS')
-                    } else if (this.token1 === 'JLS') {
-                        address1 = this.getAddress('USDC')
-                        address2 = this.getAddress('USDT')
+                    if (this.token1 === erc20Token1) {
+                        address1 = this.getAddress(erc20Token2)
+                        address2 = this.getAddress(farmToken)
+                    } else if (this.token1 === erc20Token2) {
+                        address1 = this.getAddress(erc20Token1)
+                        address2 = this.getAddress(farmToken)
+                    } else if (this.token1 === farmToken) {
+                        address1 = this.getAddress(erc20Token1)
+                        address2 = this.getAddress(erc20Token2)
                     }
                     if (index === 1) {
                         path1 = [tokenAddress1, address1, address3]
@@ -292,24 +292,24 @@ export default {
                     let address2
                     const tokenAddress1 = this.getAddress(this.token1)
                     const tokenAddress2 = this.getAddress(this.token2)
-                    if ((this.token1 === 'USDC' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'USDC')) {
-                        address1 = this.getAddress('USDT')
-                        address2 = this.getAddress('JLS')
-                    } else if ((this.token1 === 'USDC' && this.token2 === 'USDT') || (this.token1 === 'USDT' && this.token2 === 'USDC')) {
-                        address1 = this.getAddress('WMATIC')
-                        address2 = this.getAddress('JLS')
-                    } else if ((this.token1 === 'USDC' && this.token2 === 'JLS') || (this.token1 === 'JLS' && this.token2 === 'USDC')) {
-                        address1 = this.getAddress('WMATIC')
-                        address2 = this.getAddress('USDT')
-                    } else if ((this.token1 === 'USDT' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'USDT')) {
-                        address1 = this.getAddress('USDC')
-                        address2 = this.getAddress('JLS')
-                    } else if ((this.token1 === 'USDT' && this.token2 === 'JLS') || (this.token1 === 'JLS' && this.token2 === 'USDT')) {
-                        address1 = this.getAddress('WMATIC')
-                        address2 = this.getAddress('USDC')
-                    } else if ((this.token1 === 'JLS' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'JLS')) {
-                        address1 = this.getAddress('USDC')
-                        address2 = this.getAddress('USDT')
+                    if ((this.token1 === erc20Token1 && this.token2 === nativeToErc20Token) || (this.token1 === nativeToErc20Token && this.token2 === erc20Token1)) {
+                        address1 = this.getAddress(erc20Token2)
+                        address2 = this.getAddress(farmToken)
+                    } else if ((this.token1 === erc20Token1 && this.token2 === erc20Token2) || (this.token1 === erc20Token2 && this.token2 === erc20Token1)) {
+                        address1 = this.getAddress(nativeToErc20Token)
+                        address2 = this.getAddress(farmToken)
+                    } else if ((this.token1 === erc20Token1 && this.token2 === farmToken) || (this.token1 === farmToken && this.token2 === erc20Token1)) {
+                        address1 = this.getAddress(nativeToErc20Token)
+                        address2 = this.getAddress(erc20Token2)
+                    } else if ((this.token1 === erc20Token2 && this.token2 === nativeToErc20Token) || (this.token1 === nativeToErc20Token && this.token2 === erc20Token2)) {
+                        address1 = this.getAddress(erc20Token1)
+                        address2 = this.getAddress(farmToken)
+                    } else if ((this.token1 === erc20Token2 && this.token2 === farmToken) || (this.token1 === farmToken && this.token2 === erc20Token2)) {
+                        address1 = this.getAddress(nativeToErc20Token)
+                        address2 = this.getAddress(erc20Token1)
+                    } else if ((this.token1 === farmToken && this.token2 === nativeToErc20Token) || (this.token1 === nativeToErc20Token && this.token2 === farmToken)) {
+                        address1 = this.getAddress(erc20Token1)
+                        address2 = this.getAddress(erc20Token2)
                     }
                     if (index === 1) {
                         path1 = [tokenAddress1, address1, tokenAddress2]
@@ -361,12 +361,11 @@ export default {
                 const decimals2 = this.getDecimals(this.token2)
                 this.tokenVal2 = this.getShowBalance(tokenValDemo / Math.pow(10, decimals2))
                 this.showApprove = await this.getShowApprove()
-                if (!this.showSwapMessage) {
-                    const message = await this.getScaleTip(this.swapE)
-                    this.showSwapMessage = message
-                    const message2 = await this.getScaleTip(this.swapE2)
-                    this.showSwapMessage2 = message2
-                }
+
+                const message = await this.getScaleTip(false)
+                this.showSwapMessage = message
+                const message2 = await this.getScaleTip(false)
+                this.showSwapMessage2 = message2
             } else {
                 this.tokenVal2 = null
             }
@@ -378,12 +377,11 @@ export default {
                 const decimals2 = this.getDecimals(this.token1)
                 this.tokenVal1 = this.getShowBalance(tokenValDemo / Math.pow(10, decimals2))
                 this.showApprove = await this.getShowApprove()
-                if (!this.showSwapMessage) {
-                    const message = await this.getScaleTip(this.swapE)
-                    this.showSwapMessage = message
-                    const message2 = await this.getScaleTip(this.swapE2)
-                    this.showSwapMessage2 = message2
-                }
+
+                const message = await this.getScaleTip(false)
+                this.showSwapMessage = message
+                const message2 = await this.getScaleTip(false)
+                this.showSwapMessage2 = message2
             } else {
                 this.tokenVal1 = null
             }
@@ -595,15 +593,15 @@ export default {
                     const address1 = this.getAddress(nativeToErc20Token)
                     let address2
                     let address3
-                    if (this.token2 === 'USDC') { // MATIC -> USDC
-                        address2 = this.getAddress('USDT') // MATIC -> USDT-> USDC
-                        address3 = this.getAddress('JLS')// MATIC -> JLS-> USDC
-                    } else if (this.token2 === 'USDT') { // MATIC -> USDT
-                        address2 = this.getAddress('USDC') // MATIC -> USDC-> USDT
-                        address3 = this.getAddress('JLS')// MATIC -> JLS-> USDT
-                    } else if (this.token2 === 'JLS') { // MATIC -> JLS
-                        address2 = this.getAddress('USDC') // MATIC -> USDC-> JLS
-                        address3 = this.getAddress('USDT')// MATIC -> USDT-> JLS
+                    if (this.token2 === erc20Token1) { // MATIC -> USDC
+                        address2 = this.getAddress(erc20Token2) // MATIC -> USDT-> USDC
+                        address3 = this.getAddress(farmToken)// MATIC -> JLS-> USDC
+                    } else if (this.token2 === erc20Token2) { // MATIC -> USDT
+                        address2 = this.getAddress(erc20Token1) // MATIC -> USDC-> USDT
+                        address3 = this.getAddress(farmToken)// MATIC -> JLS-> USDT
+                    } else if (this.token2 === farmToken) { // MATIC -> JLS
+                        address2 = this.getAddress(erc20Token1) // MATIC -> USDC-> JLS
+                        address3 = this.getAddress(erc20Token2)// MATIC -> USDT-> JLS
                     }
                     const path1 = [address1, address2, tokenAddress2]
                     const path2 = [address1, address3, tokenAddress2]
@@ -682,24 +680,24 @@ export default {
                     let getAmountOut3
                     let address1
                     let address2
-                    if ((this.token1 === 'USDC' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'USDC')) {
-                        address1 = this.getAddress('USDT')
-                        address2 = this.getAddress('JLS')
-                    } else if ((this.token1 === 'USDC' && this.token2 === 'USDT') || (this.token1 === 'USDT' && this.token2 === 'USDC')) {
-                        address1 = this.getAddress('WMATIC')
-                        address2 = this.getAddress('JLS')
-                    } else if ((this.token1 === 'USDC' && this.token2 === 'JLS') || (this.token1 === 'JLS' && this.token2 === 'USDC')) {
-                        address1 = this.getAddress('WMATIC')
-                        address2 = this.getAddress('USDT')
-                    } else if ((this.token1 === 'USDT' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'USDT')) {
-                        address1 = this.getAddress('USDC')
-                        address2 = this.getAddress('JLS')
-                    } else if ((this.token1 === 'USDT' && this.token2 === 'JLS') || (this.token1 === 'JLS' && this.token2 === 'USDT')) {
-                        address1 = this.getAddress('WMATIC')
-                        address2 = this.getAddress('USDC')
-                    } else if ((this.token1 === 'JLS' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'JLS')) {
-                        address1 = this.getAddress('USDC')
-                        address2 = this.getAddress('USDT')
+                    if ((this.token1 === erc20Token1 && this.token2 === nativeToErc20Token) || (this.token1 === nativeToErc20Token && this.token2 === erc20Token1)) {
+                        address1 = this.getAddress(erc20Token2)
+                        address2 = this.getAddress(farmToken)
+                    } else if ((this.token1 === erc20Token1 && this.token2 === erc20Token2) || (this.token1 === erc20Token2 && this.token2 === erc20Token1)) {
+                        address1 = this.getAddress(nativeToErc20Token)
+                        address2 = this.getAddress(farmToken)
+                    } else if ((this.token1 === erc20Token1 && this.token2 === farmToken) || (this.token1 === farmToken && this.token2 === erc20Token1)) {
+                        address1 = this.getAddress(nativeToErc20Token)
+                        address2 = this.getAddress(erc20Token2)
+                    } else if ((this.token1 === erc20Token2 && this.token2 === nativeToErc20Token) || (this.token1 === nativeToErc20Token && this.token2 === erc20Token2)) {
+                        address1 = this.getAddress(erc20Token1)
+                        address2 = this.getAddress(farmToken)
+                    } else if ((this.token1 === erc20Token2 && this.token2 === farmToken) || (this.token1 === farmToken && this.token2 === erc20Token2)) {
+                        address1 = this.getAddress(nativeToErc20Token)
+                        address2 = this.getAddress(erc20Token1)
+                    } else if ((this.token1 === farmToken && this.token2 === nativeToErc20Token) || (this.token1 === nativeToErc20Token && this.token2 === farmToken)) {
+                        address1 = this.getAddress(erc20Token1)
+                        address2 = this.getAddress(erc20Token2)
                     }
                     const path1 = [tokenAddress1, address1, tokenAddress2]
                     const path2 = [tokenAddress1, address2, tokenAddress2]
@@ -774,15 +772,15 @@ export default {
                     const address3 = this.getAddress(nativeToErc20Token)
                     let address1
                     let address2
-                    if (this.token1 === 'USDC') {
-                        address1 = this.getAddress('USDT')
-                        address2 = this.getAddress('JLS')
-                    } else if (this.token1 === 'USDT') {
-                        address1 = this.getAddress('USDC')
-                        address2 = this.getAddress('JLS')
-                    } else if (this.token1 === 'JLS') {
-                        address1 = this.getAddress('USDC')
-                        address2 = this.getAddress('USDT')
+                    if (this.token1 === erc20Token1) {
+                        address1 = this.getAddress(erc20Token2)
+                        address2 = this.getAddress(farmToken)
+                    } else if (this.token1 === erc20Token2) {
+                        address1 = this.getAddress(erc20Token1)
+                        address2 = this.getAddress(farmToken)
+                    } else if (this.token1 === farmToken) {
+                        address1 = this.getAddress(erc20Token1)
+                        address2 = this.getAddress(erc20Token2)
                     }
                     const path1 = [tokenAddress1, address1, address3]
                     const path2 = [tokenAddress1, address2, address3]

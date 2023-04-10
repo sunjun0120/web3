@@ -22,7 +22,7 @@ input::-webkit-inner-spin-button {
   -webkit-appearance: none !important;
 }
 input[type='number'] {
-  -moz-appearance: textfield;
+    appearance: textfield;
 }
 // 滚动条整体宽度
 ::-webkit-scrollbar {
