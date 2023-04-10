@@ -22,26 +22,22 @@ export const baseInfoStore = defineStore('baseInfo', {
                 // 获取兑换比例
                 const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
                 const reserves = await scaleContract.methods.getReserves().call()
-                const token0 = await scaleContract.methods.token0().call()
-                const token1 = await scaleContract.methods.token1().call()
+                const token0 = this.allLp[i].from
+                const token1 = this.allLp[i].to
                 const decimals0 = this.getTokenDecimals(token0)
                 const decimals1 = this.getTokenDecimals(token1)
                 const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
                 const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
                 const exchangeRate = token1Balance / token0Balance
-
                 this.allLp[i].scale = exchangeRate
-                const name0 = this.getTokenName(token0)
-                const name1 = this.getTokenName(token1)
-                this.getBaseVal(name0, name1, exchangeRate)
+                this.getBaseVal(token0, token1, exchangeRate)
             }
         },
         // 获取精度
         getTokenDecimals(val) {
-            const web3 = new Web3(window.ethereum)
-            for (const i in this.allToken) {
-                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
-                    return this.allToken[i].decimals
+            for (const i of this.allToken) {
+                if (val === i.name) {
+                    return i.decimals
                 }
             }
         },

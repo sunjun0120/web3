@@ -81,7 +81,7 @@
                                 <div :class="swapE?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale"></div>
                             </div>
                         </div>
-                        <div class="approveBtn" @click="approve" v-if='!showCofirmBtn'>approve</div>
+                        <div class="approveBtn" @click="approve" v-if='showCofirmBtn'>approve</div>
                         <div class='approveBtn' v-else @click="confirm">Confirm Supply</div>
                     </div>
                 </div>
@@ -161,7 +161,7 @@ export default {
             showAuto: false,
             confirmExchange: false,
             loading: false,
-            showCofirmBtn: false,
+            showCofirmBtn: true,
             settings: 0.5,
             chainId: chainId
         }
@@ -185,9 +185,7 @@ export default {
             this.token1 = token0
             this.token2 = token1
             this.showCofirmBtn = false
-            if (this.token1 || this.token2) {
-                this.init()
-            }
+            this.init()
         },
         async changeToken(val) {
             if (val === 1) {
@@ -212,12 +210,14 @@ export default {
             if (this.token2) {
                 await this.getTokenScale()
                 this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+                this.showCofirmBtn = await this.getShowApprove()
             }
         },
         async  limitToken2() {
             if (this.token1) {
                 await this.getTokenScale()
                 this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
+                this.showCofirmBtn = await this.getShowApprove()
             }
         },
         async  getAllSwap1(val) {
@@ -225,6 +225,7 @@ export default {
                 this.tokenVal1 = val
                 await this.getTokenScale()
                 this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+                this.showCofirmBtn = await this.getShowApprove()
             }
         },
         async  getAllSwap2(val) {
@@ -232,6 +233,7 @@ export default {
                 this.tokenVal2 = val
                 await this.getTokenScale()
                 this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
+                this.showCofirmBtn = await this.getShowApprove()
             }
         },
         getImg(val) {
@@ -359,6 +361,68 @@ export default {
         confirm() {
             this.confirmExchange = true
         },
+        async getShowApprove() {
+            // 审批，查询当前用户的erc20代币对于router的授权数量
+            const web3 = new Web3(window.ethereum)
+            let tokenAddress1
+            let tokenAddress2
+            let decimals1
+            let decimals2
+            let getAllowance1
+            let getAllowance2
+            for (const i of this.allToken) {
+                if (i.name === this.token1) {
+                    tokenAddress1 = i.address
+                    decimals1 = i.decimals
+                }
+                if (i.name === this.token2) {
+                    tokenAddress2 = i.address
+                    decimals2 = i.decimals
+                }
+            }
+            let tokenContract1
+            let tokenContract2
+            let allowance1
+            let allowance2
+            const routerAddress = C.router_address
+            if (decimals1 === 18) {
+                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
+            } else {
+                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
+            }
+            if (decimals2 === 18) {
+                getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'ether')
+            } else {
+                getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
+            }
+            if (this.token1 === nativeToken) { // erc20+native
+                tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
+                allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
+                if (Number(getAllowance2) > Number(allowance2)) {
+                    return true
+                } else {
+                    return false
+                }
+            } else if (this.token2 === nativeToken) { // erc20+native
+                tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
+                allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
+                if (Number(getAllowance1) > Number(allowance1)) {
+                    return true
+                } else {
+                    return false
+                }
+            } else { // erc20+erc20
+                tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
+                tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
+                allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
+                allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
+                if (Number(getAllowance1) <= Number(allowance1) && Number(getAllowance2) <= Number(allowance2)) {
+                    return false
+                } else {
+                    return true
+                }
+            }
+        },
         async approve() {
             // 审批，查询当前用户的erc20代币对于router的授权数量
             const web3 = new Web3(window.ethereum)
@@ -418,8 +482,7 @@ export default {
                     await tokenContract2.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
                 }
             }
-            // this.confirm()
-            this.showCofirmBtn = true
+            this.showCofirmBtn = false
         },
         autoPercent() {
             this.settings = 0.1

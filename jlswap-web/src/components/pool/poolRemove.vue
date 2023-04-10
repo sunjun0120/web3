@@ -27,7 +27,7 @@
                 <div class="token">remove liquidity</div>
                 <div class="tokenNum">
                     <div class="numRight">
-                        <div class="numTip" @click='changeTokenVal'>greatest amount</div>
+                        <div class="numTip" @click='changeTokenVal'>MAX</div>
                     </div>
                     <div class="numLeft">
                         <el-input v-model="tokenVal" placeholder="0" type="number" class="tokenVal" @input='getTokenBalance'></el-input>%
@@ -55,8 +55,8 @@
                     </div>
                     <div class="errorTip" v-if='showError'>Enter the amount</div>
                     <div v-else>
-                        <div class="approveBtn" @click="approve" v-if='!showCofirmBtn'>approve</div>
-                        <div class='approveBtn' v-else @click="confirm">Confirm removing liquidity</div>
+                        <div class="approveBtn" @click="approve" v-if='showCofirmBtn'>Approve</div>
+                        <div class='approveBtn' v-else @click="confirm">Confirm Removing Liquidity</div>
                     </div>
                 </div>
             </div>
@@ -87,8 +87,8 @@
                 <div class='rateDiv'>
                     <div class='rateTip'>rate</div>
                     <div class='rateVal'>
-                        <div class='rateNum'>{{getScaleTip(false)}}</div>
-                        <div class='rateNum'>{{getScaleTip(true)}}</div>
+                        <div class='rateNum'>{{message1}}</div>
+                        <div class='rateNum'>{{message2}}</div>
                     </div>
                 </div>
                 <div class="confirmTip">
@@ -96,7 +96,7 @@
                     <div class="right">{{ settings }}%</div>
                 </div>
 
-                <div class="confirmBtn" @click="sureConfirm">confirm</div>
+                <div class="confirmBtn" @click="sureConfirm">Confirm</div>
             </div>
         </el-dialog>
     </div>
@@ -127,8 +127,10 @@ export default {
             tokenVal: null,
             showAuto: false,
             pairAddress: '',
-            showCofirmBtn: false,
+            showCofirmBtn: true,
             confirmExchange: false,
+            message1: '',
+            message2: '',
             allToken: [],
             settings: 0.5,
             chainId: chainId
@@ -162,8 +164,11 @@ export default {
             this.showCofirmBtn = false
             this.init()
         },
-        changeTokenVal() {
+        async changeTokenVal() {
             this.tokenVal = 100
+            this.showCofirmBtn = await this.getShowApprove()
+            this.message1 = await this.getScaleTip(true)
+            this.message2 = await this.getScaleTip(false)
         },
         getImg(val) {
             for (const i of this.allToken) {
@@ -186,9 +191,13 @@ export default {
                 }
             }
         },
-        getTokenBalance() {
+        async getTokenBalance() {
             if (Number(this.tokenVal) > 100 || Number(this.tokenVal) < 0) {
                 this.tokenVal = null
+            } else {
+                this.showCofirmBtn = await this.getShowApprove()
+                this.message1 = await this.getScaleTip(true)
+                this.message2 = await this.getScaleTip(false)
             }
         },
         autoPercent() {
@@ -209,10 +218,9 @@ export default {
                 return '1 ' + this.token2 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token1
             }
         },
-        async approve() {
+        async getShowApprove() {
             // 审批，查询当前lp对于router的授权数量
             const web3 = new Web3(window.ethereum)
-            const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
             const scale = this.tokenVal / 100
             const routerAddress = C.router_address
             const pool = new web3.eth.Contract(pairAbi, this.pairAddress)
@@ -221,9 +229,19 @@ export default {
             const liquidity = parseInt(lpBalance * scale)
             const getLiquidity = web3.utils.toWei(liquidity.toString(), 'wei')
             if (Number(getLiquidity) > Number(lpAllowance)) {
-                await pool.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
+                return true
+            } else {
+                return false
             }
-            this.showCofirmBtn = true
+        },
+        async approve() {
+            // 审批，查询当前lp对于router的授权数量
+            const web3 = new Web3(window.ethereum)
+            const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
+            const routerAddress = C.router_address
+            const pool = new web3.eth.Contract(pairAbi, this.pairAddress)
+            await pool.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
+            this.showCofirmBtn = false
         },
         confirm() {
             this.confirmExchange = true
@@ -525,7 +543,7 @@ export default {
                 .numRight{
                     font-size: 14px;
                     .numTip{
-                        padding:10px;
+                        padding:8px 10px;
                         font-size: 16px;
                         border-radius: 10px;
                         background: #E9EEF4;

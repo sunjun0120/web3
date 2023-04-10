@@ -78,12 +78,12 @@
                         <div class="exchangeInfo">
                             <div class="exchangeTip">exchange ratio</div>
                             <div class="exchangeContent">
-                                <div class="scale">{{getScaleTip(swapE)}}</div>
+                                <div class="scale">{{showSwapMessage}}</div>
                                 <div :class="swapE?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale"></div>
                             </div>
                         </div>
-                        <div class="approveBtn" @click="approve" v-if="token1!==nativeToken">approve</div>
-                        <div class="approveBtn" @click="confirm" v-else>confirm</div>
+                        <div class="approveBtn" @click="approve" v-if="showApprove">approve</div>
+                        <div class="approveBtn" @click="confirm" v-else>Confirm</div>
                     </div>
                 </div>
                 <div class="connectWallet" v-else>Network Error</div>
@@ -115,7 +115,7 @@
                 <div class="confirmTip">
                     <div class="left">exchange ratio</div>
                     <div class="right">
-                        <div class="scale">{{getScaleTip(swapE2)}}</div>
+                        <div class="scale">{{showSwapMessage2}}</div>
                         <div :class="swapE2?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale2"></div>
                     </div>
                 </div>
@@ -130,7 +130,7 @@
                 <div class="tips">
                     The output is the estimated value and you will receive at least <span>{{getMinAvailable()}} {{token2}}</span> otherwise the transaction will be rejected.
                 </div>
-                <div class="confirmBtn" @click="sureConfirm">confirm exchange</div>
+                <div class="confirmBtn" @click="sureConfirm">Confirm</div>
             </div>
         </el-dialog>
         <confirm-wait ref="confirmWait"></confirm-wait>
@@ -173,7 +173,10 @@ export default {
             showAuto: false,
             confirmExchange: false,
             loading: false,
+            showApprove: true,
             settings: 0.5,
+            showSwapMessage: '',
+            showSwapMessage2: '',
             chainId: chainId,
             nativeToken: nativeToken
         }
@@ -189,7 +192,7 @@ export default {
         }
     },
     methods: {
-        ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'connect', 'connectWeb3', 'getTokenScale']),
+        ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'connect', 'connectWeb3']),
         connectWallet() {
             this.connect()
         },
@@ -212,19 +215,183 @@ export default {
             this.tokenVal1 = null
             this.tokenVal2 = null
         },
+        async computeValue(val, decimals, index) {
+            const web3 = new Web3(window.ethereum)
+            if ((this.token1 === nativeToken && this.token2 === nativeToErc20Token) || (this.token2 === nativeToken && this.token1 === nativeToErc20Token)) {
+                let amountIn
+                if (decimals === 18) {
+                    amountIn = web3.utils.toWei(val.toString(), 'ether')
+                } else {
+                    amountIn = web3.utils.toWei(val.toString(), 'lovelace')
+                }
+                return amountIn
+            } else {
+                let amountIn
+                let amountOutMin
+                let getAmountOut1
+                let getAmountOut2
+                let getAmountOut3
+                let path1
+                let path2
+                let path3
+                if (decimals === 18) {
+                    amountIn = web3.utils.toWei(val.toString(), 'ether')
+                } else {
+                    amountIn = web3.utils.toWei(val.toString(), 'lovelace')
+                }
+                if (this.token1 === nativeToken) { // native -> erc20
+                    const tokenAddress2 = this.getAddress(this.token2)
+                    const address1 = this.getAddress(nativeToErc20Token)
+                    let address2
+                    let address3
+                    if (this.token2 === 'USDC') { // MATIC -> USDC
+                        address2 = this.getAddress('USDT') // MATIC -> USDT-> USDC
+                        address3 = this.getAddress('JLS')// MATIC -> JLS-> USDC
+                    } else if (this.token2 === 'USDT') { // MATIC -> USDT
+                        address2 = this.getAddress('USDC') // MATIC -> USDC-> USDT
+                        address3 = this.getAddress('JLS')// MATIC -> JLS-> USDT
+                    } else if (this.token2 === 'JLS') { // MATIC -> JLS
+                        address2 = this.getAddress('USDC') // MATIC -> USDC-> JLS
+                        address3 = this.getAddress('USDT')// MATIC -> USDT-> JLS
+                    }
+                    if (index === 1) {
+                        path1 = [address1, address2, tokenAddress2]
+                        path2 = [address1, address3, tokenAddress2]
+                        path3 = [address1, tokenAddress2]
+                    } else {
+                        path1 = [tokenAddress2, address2, address1]
+                        path2 = [tokenAddress2, address3, address1]
+                        path3 = [tokenAddress2, address1]
+                    }
+                } else if (this.token2 === nativeToken) { // erc20 -> native
+                    const tokenAddress1 = this.getAddress(this.token1)
+                    const address3 = this.getAddress(nativeToErc20Token)
+                    let address1
+                    let address2
+                    if (this.token1 === 'USDC') {
+                        address1 = this.getAddress('USDT')
+                        address2 = this.getAddress('JLS')
+                    } else if (this.token1 === 'USDT') {
+                        address1 = this.getAddress('USDC')
+                        address2 = this.getAddress('JLS')
+                    } else if (this.token1 === 'JLS') {
+                        address1 = this.getAddress('USDC')
+                        address2 = this.getAddress('USDT')
+                    }
+                    if (index === 1) {
+                        path1 = [tokenAddress1, address1, address3]
+                        path2 = [tokenAddress1, address2, address3]
+                        path3 = [tokenAddress1, address3]
+                    } else {
+                        path1 = [address3, address1, tokenAddress1]
+                        path2 = [address3, address2, tokenAddress1]
+                        path3 = [address3, address3]
+                    }
+                } else { // erc20 -> erc20
+                    let address1
+                    let address2
+                    const tokenAddress1 = this.getAddress(this.token1)
+                    const tokenAddress2 = this.getAddress(this.token2)
+                    if ((this.token1 === 'USDC' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'USDC')) {
+                        address1 = this.getAddress('USDT')
+                        address2 = this.getAddress('JLS')
+                    } else if ((this.token1 === 'USDC' && this.token2 === 'USDT') || (this.token1 === 'USDT' && this.token2 === 'USDC')) {
+                        address1 = this.getAddress('WMATIC')
+                        address2 = this.getAddress('JLS')
+                    } else if ((this.token1 === 'USDC' && this.token2 === 'JLS') || (this.token1 === 'JLS' && this.token2 === 'USDC')) {
+                        address1 = this.getAddress('WMATIC')
+                        address2 = this.getAddress('USDT')
+                    } else if ((this.token1 === 'USDT' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'USDT')) {
+                        address1 = this.getAddress('USDC')
+                        address2 = this.getAddress('JLS')
+                    } else if ((this.token1 === 'USDT' && this.token2 === 'JLS') || (this.token1 === 'JLS' && this.token2 === 'USDT')) {
+                        address1 = this.getAddress('WMATIC')
+                        address2 = this.getAddress('USDC')
+                    } else if ((this.token1 === 'JLS' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'JLS')) {
+                        address1 = this.getAddress('USDC')
+                        address2 = this.getAddress('USDT')
+                    }
+                    if (index === 1) {
+                        path1 = [tokenAddress1, address1, tokenAddress2]
+                        path2 = [tokenAddress1, address2, tokenAddress2]
+                        path3 = [tokenAddress1, tokenAddress2]
+                    } else {
+                        path1 = [tokenAddress2, address1, tokenAddress1]
+                        path2 = [tokenAddress2, address2, tokenAddress1]
+                        path3 = [tokenAddress2, tokenAddress1]
+                    }
+                }
+                try {
+                    await this.getAmountOut(amountIn, path1).then(res => {
+                        getAmountOut1 = res[2]
+                    }).catch((err) => {
+                        if (err) {
+                            getAmountOut1 = 0
+                        }
+                    })
+                    await this.getAmountOut(amountIn, path2).then(res => {
+                        getAmountOut2 = res[2]
+                    }).catch((err) => {
+                        if (err) {
+                            getAmountOut2 = 0
+                        }
+                    })
+                    await this.getAmountOut(amountIn, path3).then(res => {
+                        getAmountOut3 = res[1]
+                    }).catch((err) => {
+                        if (err) {
+                            getAmountOut3 = 0
+                        }
+                    })
+                } catch (error) {}
+                if (Number(getAmountOut1) > Number(getAmountOut2) && Number(getAmountOut1) > Number(getAmountOut3)) {
+                    amountOutMin = web3.utils.toWei(getAmountOut1.toString(), 'wei')
+                } else if (Number(getAmountOut2) > Number(getAmountOut1) && Number(getAmountOut2) > Number(getAmountOut3)) {
+                    amountOutMin = web3.utils.toWei(getAmountOut2.toString(), 'wei')
+                } else if (Number(getAmountOut3) > Number(getAmountOut1) && Number(getAmountOut3) > Number(getAmountOut2)) {
+                    amountOutMin = web3.utils.toWei(getAmountOut3.toString(), 'wei')
+                }
+                return amountOutMin
+            }
+        },
         async limitToken1() {
-            await this.getTokenScale()
-            this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+            if (this.tokenVal1) {
+                const decimals = this.getDecimals(this.token1)
+                const tokenValDemo = await this.computeValue(this.tokenVal1, decimals, 1)
+                const decimals2 = this.getDecimals(this.token2)
+                this.tokenVal2 = this.getShowBalance(tokenValDemo / Math.pow(10, decimals2))
+                this.showApprove = await this.getShowApprove()
+                if (!this.showSwapMessage) {
+                    const message = await this.getScaleTip(this.swapE)
+                    this.showSwapMessage = message
+                    const message2 = await this.getScaleTip(this.swapE2)
+                    this.showSwapMessage2 = message2
+                }
+            } else {
+                this.tokenVal2 = null
+            }
         },
         async limitToken2() {
-            await this.getTokenScale()
-            this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
+            if (this.tokenVal2) {
+                const decimals = this.getDecimals(this.token2)
+                const tokenValDemo = await this.computeValue(this.tokenVal2, decimals, 2)
+                const decimals2 = this.getDecimals(this.token1)
+                this.tokenVal1 = this.getShowBalance(tokenValDemo / Math.pow(10, decimals2))
+                this.showApprove = await this.getShowApprove()
+                if (!this.showSwapMessage) {
+                    const message = await this.getScaleTip(this.swapE)
+                    this.showSwapMessage = message
+                    const message2 = await this.getScaleTip(this.swapE2)
+                    this.showSwapMessage2 = message2
+                }
+            } else {
+                this.tokenVal1 = null
+            }
         },
         async getAllSwap(val) {
             if (val) {
                 this.tokenVal1 = val
-                await this.getTokenScale()
-                this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+                this.limitToken1()
             }
         },
         getImg(val) {
@@ -249,41 +416,65 @@ export default {
             this.tokenVal1 = f
             this.tokenVal2 = e
         },
-        changeScale() {
+        async changeScale() {
             this.swapE = !this.swapE
+            const message = await this.getScaleTip(this.swapE)
+            this.showSwapMessage = message
         },
-        changeScale2() {
+        async changeScale2() {
             this.swapE2 = !this.swapE2
+            const message = await this.getScaleTip(this.swapE2)
+            this.showSwapMessage2 = message
         },
         confirm() {
             // 已经approve 或者原生代币
             this.confirmExchange = true
         },
+        async getShowApprove() {
+            if (this.token1 === nativeToken) {
+                return false
+            } else {
+                const web3 = new Web3(window.ethereum)
+                let tokenAddress1
+                let decimals1
+                let getAllowance1
+                for (const i of this.allToken) {
+                    if (i.name === this.token1) {
+                        tokenAddress1 = i.address
+                        decimals1 = i.decimals
+                    }
+                }
+                if (decimals1 === 18) {
+                    getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
+                } else {
+                    getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
+                }
+                const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
+                const routerAddress = C.router_address
+                const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
+                if (Number(getAllowance1) > Number(allowance1)) {
+                    return true
+                } else {
+                    return false
+                }
+            }
+        },
         async approve() {
             // erc20代币
             const web3 = new Web3(window.ethereum)
             const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
-            let tokenAddress1
-            let decimals1
-            let getAllowance1
-            for (const i of this.allToken) {
-                if (i.name === this.token1) {
-                    tokenAddress1 = i.address
-                    decimals1 = i.decimals
-                }
-            }
-            if (decimals1 === 18) {
-                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
-            } else {
-                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
-            }
+            const tokenAddress1 = this.getAddress(this.token1)
             const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
             const routerAddress = C.router_address
-            const allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
-            if (Number(getAllowance1) > Number(allowance1)) {
-                await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
-            }
-            this.confirm()
+            await tokenContract1.methods.approve(routerAddress, amountToApprove).send({ from: this.fromAddress })
+            this.showApprove = false
+        },
+        getAmountOut(amountIn, path) {
+            const web3 = new Web3(window.ethereum)
+            const routerAddress = C.router_address
+            const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
+            const amountOut = routerContract.methods.getAmountsOut(amountIn, path).call()
+            return amountOut
         },
         async sureConfirm() {
             this.confirmExchange = false
@@ -338,7 +529,7 @@ export default {
                 getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
             }
             const amountIn = getAllowance1
-            const amountOutMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance2))).toString(), 'wei')
+            let amountOutMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance2))).toString(), 'wei')
             let tx
             const wmaticContract = new web3.eth.Contract(wmaticAbi, wmaticAddress)
             if (this.token1 === nativeToken && this.token2 === nativeToErc20Token) {
@@ -397,8 +588,63 @@ export default {
                 })
             } else {
                 if (this.token1 === nativeToken) { // native -> erc20
-                    const path = [tokenAddress1, tokenAddress2]
+                    let path
+                    let getAmountOut1
+                    let getAmountOut2
+                    let getAmountOut3
+                    const address1 = this.getAddress(nativeToErc20Token)
+                    let address2
+                    let address3
+                    if (this.token2 === 'USDC') { // MATIC -> USDC
+                        address2 = this.getAddress('USDT') // MATIC -> USDT-> USDC
+                        address3 = this.getAddress('JLS')// MATIC -> JLS-> USDC
+                    } else if (this.token2 === 'USDT') { // MATIC -> USDT
+                        address2 = this.getAddress('USDC') // MATIC -> USDC-> USDT
+                        address3 = this.getAddress('JLS')// MATIC -> JLS-> USDT
+                    } else if (this.token2 === 'JLS') { // MATIC -> JLS
+                        address2 = this.getAddress('USDC') // MATIC -> USDC-> JLS
+                        address3 = this.getAddress('USDT')// MATIC -> USDT-> JLS
+                    }
+                    const path1 = [address1, address2, tokenAddress2]
+                    const path2 = [address1, address3, tokenAddress2]
+                    const path3 = [address1, tokenAddress2]
+                    try {
+                        await this.getAmountOut(amountIn, path1).then(res => {
+                            getAmountOut1 = res[2]
+                        }).catch((err) => {
+                            if (err) {
+                                getAmountOut1 = 0
+                            }
+                        })
+                        await this.getAmountOut(amountIn, path2).then(res => {
+                            getAmountOut2 = res[2]
+                        }).catch((err) => {
+                            if (err) {
+                                getAmountOut2 = 0
+                            }
+                        })
+                        await this.getAmountOut(amountIn, path3).then(res => {
+                            getAmountOut3 = res[1]
+                        }).catch((err) => {
+                            if (err) {
+                                getAmountOut3 = 0
+                            }
+                        })
+                    } catch (error) {}
+
+                    if (Number(getAmountOut1) > Number(getAmountOut2) && Number(getAmountOut1) > Number(getAmountOut3)) {
+                        path = path1
+                        amountOutMin = web3.utils.toWei(getAmountOut1.toString(), 'wei')
+                    } else if (Number(getAmountOut2) > Number(getAmountOut1) && Number(getAmountOut2) > Number(getAmountOut3)) {
+                        path = path2
+                        amountOutMin = web3.utils.toWei(getAmountOut2.toString(), 'wei')
+                    } else if (Number(getAmountOut3) > Number(getAmountOut1) && Number(getAmountOut3) > Number(getAmountOut2)) {
+                        path = path3
+                        amountOutMin = web3.utils.toWei(getAmountOut3.toString(), 'wei')
+                    }
+
                     tx = await routerContract.methods.swapExactETHForTokens(amountOutMin, path, this.fromAddress, deadline)
+
                     const that = this
                     await web3.eth.sendTransaction({
                         from: this.fromAddress,
@@ -430,7 +676,69 @@ export default {
                         }
                     })
                 } else if (this.token1 !== nativeToken && this.token2 !== nativeToken) { // erc20 -> erc20
-                    const path = [tokenAddress1, tokenAddress2]
+                    let path
+                    let getAmountOut1
+                    let getAmountOut2
+                    let getAmountOut3
+                    let address1
+                    let address2
+                    if ((this.token1 === 'USDC' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'USDC')) {
+                        address1 = this.getAddress('USDT')
+                        address2 = this.getAddress('JLS')
+                    } else if ((this.token1 === 'USDC' && this.token2 === 'USDT') || (this.token1 === 'USDT' && this.token2 === 'USDC')) {
+                        address1 = this.getAddress('WMATIC')
+                        address2 = this.getAddress('JLS')
+                    } else if ((this.token1 === 'USDC' && this.token2 === 'JLS') || (this.token1 === 'JLS' && this.token2 === 'USDC')) {
+                        address1 = this.getAddress('WMATIC')
+                        address2 = this.getAddress('USDT')
+                    } else if ((this.token1 === 'USDT' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'USDT')) {
+                        address1 = this.getAddress('USDC')
+                        address2 = this.getAddress('JLS')
+                    } else if ((this.token1 === 'USDT' && this.token2 === 'JLS') || (this.token1 === 'JLS' && this.token2 === 'USDT')) {
+                        address1 = this.getAddress('WMATIC')
+                        address2 = this.getAddress('USDC')
+                    } else if ((this.token1 === 'JLS' && this.token2 === 'WMATIC') || (this.token1 === 'WMATIC' && this.token2 === 'JLS')) {
+                        address1 = this.getAddress('USDC')
+                        address2 = this.getAddress('USDT')
+                    }
+                    const path1 = [tokenAddress1, address1, tokenAddress2]
+                    const path2 = [tokenAddress1, address2, tokenAddress2]
+                    const path3 = [tokenAddress1, tokenAddress2]
+                    try {
+                        await this.getAmountOut(amountIn, path1).then(res => {
+                            getAmountOut1 = res[2]
+                        }).catch((err) => {
+                            if (err) {
+                                getAmountOut1 = 0
+                            }
+                        })
+                        await this.getAmountOut(amountIn, path2).then(res => {
+                            getAmountOut2 = res[2]
+                        }).catch((err) => {
+                            if (err) {
+                                getAmountOut2 = 0
+                            }
+                        })
+                        await this.getAmountOut(amountIn, path3).then(res => {
+                            getAmountOut3 = res[1]
+                        }).catch((err) => {
+                            if (err) {
+                                getAmountOut3 = 0
+                            }
+                        })
+                    } catch (error) {}
+
+                    if (Number(getAmountOut1) > Number(getAmountOut2) && Number(getAmountOut1) > Number(getAmountOut3)) {
+                        path = path1
+                        amountOutMin = web3.utils.toWei(getAmountOut1.toString(), 'wei')
+                    } else if (Number(getAmountOut2) > Number(getAmountOut1) && Number(getAmountOut2) > Number(getAmountOut3)) {
+                        path = path2
+                        amountOutMin = web3.utils.toWei(getAmountOut2.toString(), 'wei')
+                    } else if (Number(getAmountOut3) > Number(getAmountOut1) && Number(getAmountOut3) > Number(getAmountOut2)) {
+                        path = path3
+                        amountOutMin = web3.utils.toWei(getAmountOut3.toString(), 'wei')
+                    }
+
                     tx = await routerContract.methods.swapExactTokensForTokens(amountIn, amountOutMin, path, this.fromAddress, deadline)
                     const that = this
                     await web3.eth.sendTransaction({
@@ -459,7 +767,61 @@ export default {
                         }
                     })
                 } else if (this.token2 === nativeToken) { // erc20 -> native
-                    const path = [tokenAddress1, tokenAddress2]
+                    let path
+                    let getAmountOut1
+                    let getAmountOut2
+                    let getAmountOut3
+                    const address3 = this.getAddress(nativeToErc20Token)
+                    let address1
+                    let address2
+                    if (this.token1 === 'USDC') {
+                        address1 = this.getAddress('USDT')
+                        address2 = this.getAddress('JLS')
+                    } else if (this.token1 === 'USDT') {
+                        address1 = this.getAddress('USDC')
+                        address2 = this.getAddress('JLS')
+                    } else if (this.token1 === 'JLS') {
+                        address1 = this.getAddress('USDC')
+                        address2 = this.getAddress('USDT')
+                    }
+                    const path1 = [tokenAddress1, address1, address3]
+                    const path2 = [tokenAddress1, address2, address3]
+                    const path3 = [tokenAddress1, address3]
+                    try {
+                        await this.getAmountOut(amountIn, path1).then(res => {
+                            getAmountOut1 = res[2]
+                        }).catch((err) => {
+                            if (err) {
+                                getAmountOut1 = 0
+                            }
+                        })
+                        await this.getAmountOut(amountIn, path2).then(res => {
+                            getAmountOut2 = res[2]
+                        }).catch((err) => {
+                            if (err) {
+                                getAmountOut2 = 0
+                            }
+                        })
+                        await this.getAmountOut(amountIn, path3).then(res => {
+                            getAmountOut3 = res[1]
+                        }).catch((err) => {
+                            if (err) {
+                                getAmountOut3 = 0
+                            }
+                        })
+                    } catch (error) {}
+
+                    if (Number(getAmountOut1) > Number(getAmountOut2) && Number(getAmountOut1) > Number(getAmountOut3)) {
+                        path = path1
+                        amountOutMin = web3.utils.toWei(getAmountOut1.toString(), 'wei')
+                    } else if (Number(getAmountOut2) > Number(getAmountOut1) && Number(getAmountOut2) > Number(getAmountOut3)) {
+                        path = path2
+                        amountOutMin = web3.utils.toWei(getAmountOut2.toString(), 'wei')
+                    } else if (Number(getAmountOut3) > Number(getAmountOut1) && Number(getAmountOut3) > Number(getAmountOut2)) {
+                        path = path3
+                        amountOutMin = web3.utils.toWei(getAmountOut3.toString(), 'wei')
+                    }
+
                     tx = await routerContract.methods.swapExactTokensForETH(amountIn, amountOutMin, path, this.fromAddress, deadline)
                     const that = this
                     await web3.eth.sendTransaction({
@@ -564,17 +926,21 @@ export default {
                 }
             }
         },
-        getScaleTip(val) {
+        async getScaleTip(val) {
             if (!val) {
-                const token1Scale = this.getScale(this.token1)
-                const token2Scale = this.getScale(this.token2)
-                const showScale = token2Scale / token1Scale
-                return '1 ' + this.token1 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token2
+                const decimals = this.getDecimals(this.token1)
+                const tokenValDemo = await this.computeValue(1, decimals, 1)
+                const decimals2 = this.getDecimals(this.token2)
+                const showScale = tokenValDemo / Math.pow(10, decimals2)
+                const message = '1 ' + this.token1 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token2
+                return message
             } else {
-                const token1Scale = this.getScale(this.token1)
-                const token2Scale = this.getScale(this.token2)
-                const showScale = token1Scale / token2Scale
-                return '1 ' + this.token2 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token1
+                const decimals = this.getDecimals(this.token2)
+                const tokenValDemo = await this.computeValue(1, decimals, 2)
+                const decimals2 = this.getDecimals(this.token1)
+                const showScale = tokenValDemo / Math.pow(10, decimals2)
+                const message = '1 ' + this.token2 + ' = ' + this.getShowBalance(showScale) + ' ' + this.token1
+                return message
             }
         },
         // 获取能接受的最小值
@@ -597,6 +963,20 @@ export default {
             for (const i of this.allToken) {
                 if (i.name === token) {
                     return i.baseVal
+                }
+            }
+        },
+        getAddress(token) {
+            for (const i of this.allToken) {
+                if (i.name === token) {
+                    return i.address
+                }
+            }
+        },
+        getDecimals(token) {
+            for (const i of this.allToken) {
+                if (i.name === token) {
+                    return i.decimals
                 }
             }
         },
