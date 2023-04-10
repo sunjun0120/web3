@@ -1112,7 +1112,7 @@ export default {
             border-radius: 10px;
             border: 2px solid #FFFFFF;
             left: 70px;
-            top: 124px;
+            top: 126px;
             cursor: pointer;
             display: flex;
             align-items: center;
