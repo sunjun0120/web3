@@ -12,7 +12,9 @@
         </div> -->
         <div class='middle'>
             <el-tabs v-model="activeName" @tab-click="handleClick">
-                <el-tab-pane label="Farms List" name="All"><farm-table  @showWait='showWait' @hideWait='hideWait' @showSuccess='showSuccess' @showFail='showFail'></farm-table></el-tab-pane>
+                <el-tab-pane label="Farms List" name="All">
+                    <farm-table  @showWait='showWait' @hideWait='hideWait' @showSuccess='showSuccess' @showFail='showFail'></farm-table>
+                </el-tab-pane>
                 <!-- <el-tab-pane label="Myfarms" name="Myfarms"><farm-table></farm-table></el-tab-pane> -->
             </el-tabs>
         </div>
