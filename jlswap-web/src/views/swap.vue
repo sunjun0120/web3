@@ -553,7 +553,7 @@ export default {
                         }
                     }
                     if (hash) {
-                        that.init()
+                        // that.init()
                         that.$refs.confirmWait.hide()
                         that.$refs.confirmSuccess.show(hash)
                         that.getStatus(hash)
@@ -578,7 +578,7 @@ export default {
                         }
                     }
                     if (hash) {
-                        that.init()
+                        // that.init()
                         that.$refs.confirmWait.hide()
                         that.$refs.confirmSuccess.show(hash)
                         that.getStatus(hash)
@@ -667,7 +667,7 @@ export default {
                             }
                         }
                         if (hash) {
-                            that.init()
+                            // that.init()
                             that.$refs.confirmWait.hide()
                             that.$refs.confirmSuccess.show(hash)
                             that.getStatus(hash)
@@ -758,7 +758,7 @@ export default {
                             }
                         }
                         if (hash) {
-                            that.init()
+                            // that.init()
                             that.$refs.confirmWait.hide()
                             that.$refs.confirmSuccess.show(hash)
                             that.getStatus(hash)
@@ -841,7 +841,7 @@ export default {
                             }
                         }
                         if (hash) {
-                            that.init()
+                            // that.init()
                             that.$refs.confirmWait.hide()
                             that.$refs.confirmSuccess.show(hash)
                             that.getStatus(hash)
@@ -1032,6 +1032,7 @@ export default {
             this.tokenVal2 = null
             const a = this.token1
             const b = this.token2
+
             for (const i of this.allToken) {
                 if (i.name === a) {
                     this.balance1 = i.balance
@@ -1058,7 +1059,40 @@ export default {
                     if (this.network) {
                         this.loading = true
                         // 获取余额
-                        await this.getSwapBalance()
+                        const that = this
+                        if (this.token1 === nativeToken) {
+                            web3.eth.getBalance(this.fromAddress, (err, res) => {
+                                if (!err) {
+                                    const decimals = that.getDecimals(that.token1)
+                                    const balance = res / Math.pow(10, decimals)
+                                    this.balance1 = balance
+                                }
+                            })
+                        } else {
+                            const contractAddress = this.getAddress(this.token1)
+                            const decimals2 = that.getDecimals(that.token1)
+                            const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+                            const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
+                            const balanceVal = balance / Math.pow(10, decimals2)
+                            this.balance1 = balanceVal
+                        }
+                        if (this.token2 === nativeToken) {
+                            web3.eth.getBalance(this.fromAddress, (err, res) => {
+                                if (!err) {
+                                    const decimals = that.getDecimals(that.token2)
+                                    const balance = res / Math.pow(10, decimals)
+                                    this.balance2 = balance
+                                }
+                            })
+                        } else {
+                            const contractAddress = this.getAddress(this.token2)
+                            const decimals2 = that.getDecimals(that.token2)
+                            const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+                            const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
+                            const balanceVal = balance / Math.pow(10, decimals2)
+                            this.balance2 = balanceVal
+                        }
+
                         this.loading = false
                     } else {
                         this.connectWeb3()

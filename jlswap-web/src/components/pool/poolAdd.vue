@@ -207,17 +207,21 @@ export default {
             this.tokenVal2 = null
         },
         async limitToken1() {
-            if (this.token2) {
+            if (this.token2 && this.tokenVal1) {
                 await this.getTokenScale()
                 this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
                 this.showCofirmBtn = await this.getShowApprove()
+            } else {
+                this.tokenVal2 = null
             }
         },
         async  limitToken2() {
-            if (this.token1) {
+            if (this.token1 && this.tokenVal2) {
                 await this.getTokenScale()
                 this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
                 this.showCofirmBtn = await this.getShowApprove()
+            } else {
+                this.tokenVal1 = null
             }
         },
         async  getAllSwap1(val) {
@@ -603,18 +607,21 @@ export default {
             this.tokenVal2 = null
             // 获取余额
             this.loading = true
-            await this.getAllBalance()
-            // 获取兑换比例
-            // this.getTokenScale()
-            const a = this.token1
-            const b = this.token2
-            for (const i of this.allToken) {
-                if (i.name === a) {
-                    this.balance1 = this.getShowBalance(i.balance)
-                } else if (i.name === b) {
-                    this.balance2 = this.getShowBalance(i.balance)
+            if (this.token1 || this.token2) {
+                await this.getAllBalance()
+                // 获取兑换比例
+                // this.getTokenScale()
+                const a = this.token1
+                const b = this.token2
+                for (const i of this.allToken) {
+                    if (i.name === a) {
+                        this.balance1 = this.getShowBalance(i.balance)
+                    } else if (i.name === b) {
+                        this.balance2 = this.getShowBalance(i.balance)
+                    }
                 }
             }
+
             this.loading = false
         }
     },

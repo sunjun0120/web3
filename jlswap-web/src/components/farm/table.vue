@@ -338,25 +338,32 @@ export default {
             this.allLp[i].detailLoading = true
             const web3 = new Web3(window.ethereum)
             const farmContract = new web3.eth.Contract(farmAbi, this.allLp[i].farmAddress)
-            const lpPrice = this.allLp[i].lpPrice
 
             // 个人可用lp数量
             const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
             const lpDecimals = await pool.methods.decimals().call()
-            const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-            const showBalance = lpBalance / Math.pow(10, lpDecimals)
-            this.allLp[i].lpBalance = showBalance.toFixed(lpDecimals)
-            const lpBalanceValue = lpPrice * lpBalance
-            this.allLp[i].lpBalanceValue = lpBalanceValue
+            pool.methods.balanceOf(this.fromAddress).call().then(res => {
+                const lpBalance = res
+                const showBalance = lpBalance / Math.pow(10, lpDecimals)
+                const lpBalanceValue = this.allLp[i].lpPrice * lpBalance
+                this.$set(this.allLp[i], 'lpBalance', showBalance.toFixed(lpDecimals))
+                this.$set(this.allLp[i], 'lpBalanceValue', lpBalanceValue)
+            })
+
             // 个人抵押lp数量
-            const personLpNum = await farmContract.methods.balanceOf(this.fromAddress).call()
-            const personLpNumShow = personLpNum / Math.pow(10, lpDecimals)
-            this.allLp[i].personLpNum = personLpNumShow.toFixed(lpDecimals)
-            this.allLp[i].personLpValue = personLpNum * lpPrice
+            farmContract.methods.balanceOf(this.fromAddress).call().then(res => {
+                const personLpNum = res
+                const personLpNumShow = personLpNum / Math.pow(10, lpDecimals)
+
+                this.$set(this.allLp[i], 'personLpNum', personLpNumShow.toFixed(lpDecimals))
+                this.$set(this.allLp[i], 'personLpValue', personLpNum * this.allLp[i].lpPrice)
+            })
 
             // 个人奖励token数量
-            const rewardCount = await farmContract.methods.earned(this.fromAddress).call()
-            this.allLp[i].rewardCount = rewardCount / Math.pow(10, 18)
+            farmContract.methods.earned(this.fromAddress).call().then(res => {
+                const rewardCount = res
+                this.$set(this.allLp[i], 'rewardCount', rewardCount / Math.pow(10, 18))
+            })
             this.allLp[i].detailLoading = false
         },
         initNoUser() {
@@ -383,8 +390,7 @@ export default {
             const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
             const showBalance = lpBalance / Math.pow(10, lpDecimals)
             this.allLp[i].lpBalance = showBalance.toFixed(lpDecimals)
-            const lpPrice = this.allLp[i].lpPrice
-            const lpBalanceValue = lpPrice * lpBalance
+            const lpBalanceValue = this.allLp[i].lpPrice * lpBalance
             this.allLp[i].lpBalanceValue = lpBalanceValue
             this.refresh2(i)
             this.allLp[i].detailLoading = false
@@ -403,14 +409,15 @@ export default {
             const personLpNum = await farmContract.methods.balanceOf(this.fromAddress).call()
             const lpDecimals = await pool.methods.decimals().call()
             const personLpNumShow = personLpNum / Math.pow(10, lpDecimals)
-            const lpPrice = this.allLp[i].lpPrice
-            this.allLp[i].personLpNum = personLpNumShow.toFixed(lpDecimals)
-            this.allLp[i].personLpValue = personLpNum * lpPrice
+            this.$set(this.allLp[i], 'personLpNum', personLpNumShow.toFixed(lpDecimals))
+            this.$set(this.allLp[i], 'personLpValue', personLpNum * this.allLp[i].lpPrice)
 
             // Total Value
-            const totalSupply = await farmContract.methods.totalSupply().call()
-            const farmValue = lpPrice * totalSupply
-            this.allLp[i].farmValue = farmValue
+            farmContract.methods.totalSupply().call().then(res => {
+                const totalSupply = res
+                const farmValue = this.allLp[i].lpPrice * totalSupply
+                this.$set(this.allLp[i], 'farmValue', farmValue)
+            })
 
             this.allLp[i].detailLoading = false
         },
@@ -419,14 +426,15 @@ export default {
             this.allLp[i].detailLoading = true
             const web3 = new Web3(window.ethereum)
             const farmContract = new web3.eth.Contract(farmAbi, this.allLp[i].farmAddress)
-            const rewardCount = await farmContract.methods.earned(this.fromAddress).call()
-            this.allLp[i].rewardCount = rewardCount / Math.pow(10, 18)
+            farmContract.methods.earned(this.fromAddress).call().then(res => {
+                const rewardCount = res
+                this.$set(this.allLp[i], 'rewardCount', rewardCount / Math.pow(10, 18))
+            })
             this.allLp[i].detailLoading = false
         },
         async initList() {
             const web3 = new Web3(window.ethereum)
             await this.getTokenScale()
-
             for (const i in this.allLp) {
                 this.$set(this.allLp[i], 'pledgeVal', null)
                 this.$set(this.allLp[i], 'releaseVal', null)
@@ -436,84 +444,41 @@ export default {
                 this.$set(this.allLp[i], 'detailLoading', false)
                 this.allLp[i].loading = true
                 if (this.allLp[i].farmAddress) {
-                    const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                    const totalPrice = this.allLp[i].totalPrice
-                    const totalSupply0 = await scaleContract.methods.totalSupply().call()
-                    const lpPrice0 = totalPrice / totalSupply0
-                    this.allLp[i].lpPrice = lpPrice0
-
                     // Total Value
                     const farmContract = new web3.eth.Contract(farmAbi, this.allLp[i].farmAddress)
-                    const lpPrice = this.allLp[i].lpPrice
-                    // const totalSupply = await farmContract.methods.totalSupply().call()
                     farmContract.methods.totalSupply().call().then(res => {
                         const totalSupply = res
-                        const farmValue = lpPrice * totalSupply
-                        this.allLp[i].farmValue = farmValue
+                        const farmValue = this.allLp[i].lpPrice * totalSupply
+                        this.$set(this.allLp[i], 'farmValue', farmValue)
                     })
-                    // const farmValue = lpPrice * totalSupply
-                    // this.allLp[i].farmValue = farmValue
-
-                    // 每天产出
-                    // const rewardRate = await farmContract.methods.rewardRate().call()
-                    // const rewardRateDay = rewardRate * 60 * 60 * 24 / Math.pow(10, 18)
-                    // this.allLp[i].rewardRate = rewardRateDay
-
                     farmContract.methods.rewardRate().call().then(res => {
+                        // 每天产出
                         const rewardRate = res
                         const rewardRateDay = rewardRate * 60 * 60 * 24 / Math.pow(10, 18)
-                        this.allLp[i].rewardRate0 = rewardRate
-                        this.allLp[i].rewardRate = rewardRateDay
+                        this.$set(this.allLp[i], 'rewardRate0', rewardRate)
+                        this.$set(this.allLp[i], 'rewardRate', rewardRateDay)
                     })
-
                     // APR
                     farmContract.methods.periodFinish().call().then(res => {
                         const periodFinish = res
                         const now = new Date()
                         const nowTime = Math.floor(now.getTime() / 1000)
-                        setTimeout(() => {
-                            if (nowTime <= periodFinish) { // 判断是否到期，到期后无奖励
-                                if (this.allLp[i].farmValue) {
-                                    const rewardRateYear = this.allLp[i].rewardRate0 * 3600 * 24 * 365 // 一年总奖励
-                                    const jlsPrice = this.getTokenPrice(farmToken)
-                                    const rewardRateYearValue = (rewardRateYear / Math.pow(10, 18)) * (1 / jlsPrice)
-                                    const apr = rewardRateYearValue / this.allLp[i].farmValue * 100
-                                    const showApr = this.getAprShow(apr) + '%'
-                                    this.$set(this.allLp[i], 'apr', showApr)
-                                // this.allLp[i].apr = showApr
-                                } else { // 池子没有抵押资产
-                                // this.allLp[i].apr = '∞'
-                                    this.$set(this.allLp[i], 'apr', '∞')
-                                }
-                            } else if (nowTime > periodFinish) {
-                            // this.allLp[i].apr = '0'
-                                this.$set(this.allLp[i], 'apr', '0')
+
+                        if (nowTime <= periodFinish) { // 判断是否到期，到期后无奖励
+                            if (this.allLp[i].farmValue) {
+                                // const rewardRateYear = this.allLp[i].rewardRate0 * 3600 * 24 * 365 // 一年总奖励
+                                const jlsPrice = this.getTokenPrice(farmToken)
+                                const rewardRateYearValue = ((this.allLp[i].rewardRate0 * 3600 * 24 * 365) / Math.pow(10, 18)) * (1 / jlsPrice)
+                                const apr = rewardRateYearValue / this.allLp[i].farmValue * 100
+                                const showApr = this.getAprShow(apr) + '%'
+                                this.$set(this.allLp[i], 'apr', showApr)
+                            } else { // 池子没有抵押资产
+                                this.$set(this.allLp[i], 'apr', '∞')
                             }
-                        })
+                        } else if (nowTime > periodFinish) {
+                            this.$set(this.allLp[i], 'apr', '0')
+                        }
                     })
-
-                    // APR
-                    // const periodFinish = await farmContract.methods.periodFinish().call()
-                    // const now = new Date()
-                    // const nowTime = Math.floor(now.getTime() / 1000)
-                    // if (nowTime <= periodFinish) { // 判断是否到期，到期后无奖励
-                    //     if (this.allLp[i].farmValue) {
-                    //         const rewardRateYear = rewardRate * 3600 * 24 * 365 // 一年总奖励
-                    //         const jlsPrice = this.getTokenPrice(farmToken)
-                    //         const rewardRateYearValue = (rewardRateYear / Math.pow(10, 18)) * (1 / jlsPrice)
-                    //         const apr = rewardRateYearValue / farmValue * 100
-                    //         const showApr = this.getAprShow(apr) + '%'
-                    //         this.$set(this.allLp[i], 'apr', showApr)
-                    //         // this.allLp[i].apr = showApr
-                    //     } else { // 池子没有抵押资产
-                    //         // this.allLp[i].apr = '∞'
-                    //         this.$set(this.allLp[i], 'apr', '∞')
-                    //     }
-                    // } else if (nowTime > periodFinish) {
-                    //     // this.allLp[i].apr = '0'
-                    //     this.$set(this.allLp[i], 'apr', '0')
-                    // }
-
                     this.allLp[i].loading = false
                 }
             }
@@ -542,15 +507,16 @@ export default {
                 const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
                 const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
                 const exchangeRate = token1Balance / token0Balance
-                this.allLp[i].scale = exchangeRate
+                this.$set(this.allLp[i], 'scale', exchangeRate)
+                // this.allLp[i].scale = exchangeRate
                 this.getBaseVal(token0, token1, exchangeRate)
                 const token0Price = 1 / this.getTokenPrice(token0)
                 const token1Price = 1 / this.getTokenPrice(token1)
                 const totalPrice = token0Balance * token0Price + token1Balance * token1Price
-                this.allLp[i].totalPrice = totalPrice
-                // const totalSupply = await scaleContract.methods.totalSupply().call()
-                // const lpPrice = totalPrice / totalSupply
-                // this.allLp[i].lpPrice = lpPrice
+                this.$set(this.allLp[i], 'totalPrice', totalPrice)
+                const totalSupply0 = await scaleContract.methods.totalSupply().call()
+                const lpPrice0 = totalPrice / totalSupply0
+                this.$set(this.allLp[i], 'lpPrice', lpPrice0)
             }
         },
         getTokenPrice(name) {

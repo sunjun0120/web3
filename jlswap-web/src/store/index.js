@@ -5,6 +5,7 @@ import { chainId } from '../constants/common'
 import { pairAbi } from '../constants/abi/pairAbi'
 import { lpList } from '../constants/lpList.js'
 import { tokenList } from '../constants/tokens'
+import Vue from 'vue'
 
 export const baseInfoStore = defineStore('baseInfo', {
     state: () => ({
@@ -31,6 +32,35 @@ export const baseInfoStore = defineStore('baseInfo', {
                 const exchangeRate = token1Balance / token0Balance
                 this.allLp[i].scale = exchangeRate
                 this.getBaseVal(token0, token1, exchangeRate)
+            }
+        },
+        // 获取兑换比例
+        getTokenScale2() {
+            for (const i in this.allLp) {
+                const web3 = new Web3(window.ethereum)
+                const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+                scaleContract.methods.getReserves().call().then(res => {
+                    const reserves = res
+                    const token0 = this.allLp[i].from
+                    const token1 = this.allLp[i].to
+                    const decimals0 = this.getTokenDecimals(token0)
+                    const decimals1 = this.getTokenDecimals(token1)
+                    const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                    const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                    const exchangeRate = token1Balance / token0Balance
+                    Vue.set(this.allLp[i], 'scale', exchangeRate)
+                    this.getBaseVal(token0, token1, exchangeRate)
+                    const token0Price = 1 / this.getTokenPrice(token0)
+                    const token1Price = 1 / this.getTokenPrice(token1)
+                    const totalPrice = token0Balance * token0Price + token1Balance * token1Price
+                    Vue.set(this.allLp[i], 'totalPrice', totalPrice)
+                })
+                scaleContract.methods.totalSupply().call().then(res => {
+                    const totalSupply0 = res
+                    const totalPrice = this.allLp[i].totalPrice
+                    const lpPrice0 = totalPrice / totalSupply0
+                    Vue.set(this.allLp[i], 'lpPrice', lpPrice0)
+                })
             }
         },
         // 获取精度

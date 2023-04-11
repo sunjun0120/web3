@@ -132,10 +132,9 @@ export default {
             return balance
         },
         getTokenDecimals(val) {
-            const web3 = new Web3(window.ethereum)
-            for (const i in this.allToken) {
-                if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
-                    return this.allToken[i].decimals
+            for (const i of this.allToken) {
+                if (val === i.name) {
+                    return i.decimals
                 }
             }
         },
@@ -169,19 +168,38 @@ export default {
                         this.lpLoading = true
                         const web3 = new Web3(window.ethereum)
                         const pool = new web3.eth.Contract(pairAbi, address)
-                        const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-                        const reserves = await pool.methods.getReserves().call()
-                        const token0 = await pool.methods.token0().call()
-                        const token1 = await pool.methods.token1().call()
-                        const decimals0 = this.getTokenDecimals(token0)
-                        const decimals1 = this.getTokenDecimals(token1)
-                        const totalSupply = await pool.methods.totalSupply().call()
-                        this.allLp[i].proportion = lpBalance / totalSupply
-                        const token0Balance = reserves._reserve0 * (lpBalance / totalSupply) / Math.pow(10, decimals0)
-                        const token1Balance = reserves._reserve1 * (lpBalance / totalSupply) / Math.pow(10, decimals1)
-                        this.allLp[i].token0Balance = token0Balance
-                        this.allLp[i].token1Balance = token1Balance
-                        this.lpLoading = false
+                        // const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+                        pool.methods.balanceOf(this.fromAddress).call().then(res => {
+                            const lpBalance = res
+                            pool.methods.totalSupply().call().then(res1 => {
+                                const totalSupply = res1
+                                // this.allLp[i].proportion = lpBalance / totalSupply
+                                this.$set(this.allLp[i], 'proportion', lpBalance / totalSupply)
+                                pool.methods.getReserves().call().then(res => {
+                                    const reserves = res
+                                    const token0 = this.allLp[i].from
+                                    const token1 = this.allLp[i].to
+                                    const decimals0 = this.getTokenDecimals(token0)
+                                    const decimals1 = this.getTokenDecimals(token1)
+                                    const token0Balance = reserves._reserve0 * this.allLp[i].proportion / Math.pow(10, decimals0)
+                                    const token1Balance = reserves._reserve1 * this.allLp[i].proportion / Math.pow(10, decimals1)
+                                    this.$set(this.allLp[i], 'token0Balance', token0Balance)
+                                    this.$set(this.allLp[i], 'token1Balance', token1Balance)
+                                    this.lpLoading = false
+                                })
+                            })
+                        })
+                        // const reserves = await pool.methods.getReserves().call()
+                        // const token0 = this.allLp[i].from
+                        // const token1 = this.allLp[i].to
+                        // const decimals0 = this.getTokenDecimals(token0)
+                        // const decimals1 = this.getTokenDecimals(token1)
+                        // const totalSupply = await pool.methods.totalSupply().call()
+                        // this.allLp[i].proportion = lpBalance / totalSupply
+                        // const token0Balance = reserves._reserve0 * (lpBalance / totalSupply) / Math.pow(10, decimals0)
+                        // const token1Balance = reserves._reserve1 * (lpBalance / totalSupply) / Math.pow(10, decimals1)
+                        // this.allLp[i].token0Balance = token0Balance
+                        // this.allLp[i].token1Balance = token1Balance
                     }
                 }
             }
@@ -221,13 +239,22 @@ export default {
             for (const i in this.allLp) {
                 this.$set(this.allLp[i], 'close', true)
                 const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-                this.allLp[i].lpBalance = lpBalance
-                if (lpBalance > 0) {
-                    this.$set(this.allLp[i], 'show', true)
-                } else {
-                    this.$set(this.allLp[i], 'show', false)
-                }
+                // const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+                pool.methods.balanceOf(this.fromAddress).call().then(res => {
+                    const lpBalance = res
+                    this.allLp[i].lpBalance = lpBalance
+                    if (lpBalance > 0) {
+                        this.$set(this.allLp[i], 'show', true)
+                    } else {
+                        this.$set(this.allLp[i], 'show', false)
+                    }
+                })
+                // this.allLp[i].lpBalance = lpBalance
+                // if (lpBalance > 0) {
+                //     this.$set(this.allLp[i], 'show', true)
+                // } else {
+                //     this.$set(this.allLp[i], 'show', false)
+                // }
             }
             this.loading = false
         },
