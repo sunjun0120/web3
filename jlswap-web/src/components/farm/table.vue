@@ -434,7 +434,9 @@ export default {
         },
         async initList() {
             const web3 = new Web3(window.ethereum)
+            console.log(new Date())
             await this.getTokenScale()
+            console.log(new Date())
             for (const i in this.allLp) {
                 this.$set(this.allLp[i], 'pledgeVal', null)
                 this.$set(this.allLp[i], 'releaseVal', null)
@@ -445,6 +447,11 @@ export default {
                 this.allLp[i].loading = true
                 if (this.allLp[i].farmAddress) {
                     // Total Value
+                    const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+                    const totalPrice = this.allLp[i].totalPrice
+                    const totalSupply0 = await scaleContract.methods.totalSupply().call()
+                    const lpPrice0 = totalPrice / totalSupply0
+                    this.$set(this.allLp[i], 'lpPrice', lpPrice0)
                     const farmContract = new web3.eth.Contract(farmAbi, this.allLp[i].farmAddress)
                     farmContract.methods.totalSupply().call().then(res => {
                         const totalSupply = res
@@ -514,9 +521,6 @@ export default {
                 const token1Price = 1 / this.getTokenPrice(token1)
                 const totalPrice = token0Balance * token0Price + token1Balance * token1Price
                 this.$set(this.allLp[i], 'totalPrice', totalPrice)
-                const totalSupply0 = await scaleContract.methods.totalSupply().call()
-                const lpPrice0 = totalPrice / totalSupply0
-                this.$set(this.allLp[i], 'lpPrice', lpPrice0)
             }
         },
         getTokenPrice(name) {
