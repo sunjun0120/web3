@@ -444,7 +444,7 @@ export default {
                 this.$set(this.allLp[i], 'hideError', false)
                 this.$set(this.allLp[i], 'hideError2', false)
                 this.$set(this.allLp[i], 'detailLoading', false)
-                this.allLp[i].loading = true
+                this.allLp[i].loading = false
                 if (this.allLp[i].farmAddress) {
                     // Total Value
                     const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
@@ -488,7 +488,7 @@ export default {
                         })
                     })
 
-                    this.allLp[i].loading = false
+                    // this.allLp[i].loading = false
                 }
             }
         },
