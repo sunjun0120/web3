@@ -464,27 +464,27 @@ export default {
                             const rewardRateDay = rewardRate * 60 * 60 * 24 / Math.pow(10, 18)
                             this.$set(this.allLp[i], 'rewardRate0', rewardRate)
                             this.$set(this.allLp[i], 'rewardRate', rewardRateDay)
-                        })
-                        // APR
-                        farmContract.methods.periodFinish().call().then(res => {
-                            const periodFinish = res
-                            const now = new Date()
-                            const nowTime = Math.floor(now.getTime() / 1000)
+                            // APR
+                            farmContract.methods.periodFinish().call().then(res => {
+                                const periodFinish = res
+                                const now = new Date()
+                                const nowTime = Math.floor(now.getTime() / 1000)
 
-                            if (nowTime <= periodFinish) { // 判断是否到期，到期后无奖励
-                                if (this.allLp[i].farmValue) {
-                                // const rewardRateYear = this.allLp[i].rewardRate0 * 3600 * 24 * 365 // 一年总奖励
-                                    const jlsPrice = this.getTokenPrice(farmToken)
-                                    const rewardRateYearValue = ((this.allLp[i].rewardRate0 * 3600 * 24 * 365) / Math.pow(10, 18)) * (1 / jlsPrice)
-                                    const apr = rewardRateYearValue / this.allLp[i].farmValue * 100
-                                    const showApr = this.getAprShow(apr) + '%'
-                                    this.$set(this.allLp[i], 'apr', showApr)
-                                } else { // 池子没有抵押资产
-                                    this.$set(this.allLp[i], 'apr', '∞')
+                                if (nowTime <= periodFinish) { // 判断是否到期，到期后无奖励
+                                    if (this.allLp[i].farmValue) {
+                                        // const rewardRateYear = this.allLp[i].rewardRate0 * 3600 * 24 * 365 // 一年总奖励
+                                        const jlsPrice = this.getTokenPrice(farmToken)
+                                        const rewardRateYearValue = ((this.allLp[i].rewardRate0 * 3600 * 24 * 365) / Math.pow(10, 18)) * (1 / jlsPrice)
+                                        const apr = rewardRateYearValue / this.allLp[i].farmValue * 100
+                                        const showApr = this.getAprShow(apr) + '%'
+                                        this.$set(this.allLp[i], 'apr', showApr)
+                                    } else { // 池子没有抵押资产
+                                        this.$set(this.allLp[i], 'apr', '∞')
+                                    }
+                                } else if (nowTime > periodFinish) {
+                                    this.$set(this.allLp[i], 'apr', '0')
                                 }
-                            } else if (nowTime > periodFinish) {
-                                this.$set(this.allLp[i], 'apr', '0')
-                            }
+                            })
                         })
                     })
 
