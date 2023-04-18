@@ -208,8 +208,8 @@ export default {
         },
         async limitToken1() {
             if (this.token2 && this.tokenVal1) {
-                await this.getTokenScale()
-                this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+                // await this.getTokenScale()
+                // this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
                 this.showCofirmBtn = await this.getShowApprove()
             } else {
                 this.tokenVal2 = null
@@ -217,8 +217,8 @@ export default {
         },
         async  limitToken2() {
             if (this.token1 && this.tokenVal2) {
-                await this.getTokenScale()
-                this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
+                // await this.getTokenScale()
+                // this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
                 this.showCofirmBtn = await this.getShowApprove()
             } else {
                 this.tokenVal1 = null
@@ -227,16 +227,16 @@ export default {
         async  getAllSwap1(val) {
             if (val && this.token2) {
                 this.tokenVal1 = val
-                await this.getTokenScale()
-                this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+                // await this.getTokenScale()
+                // this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
                 this.showCofirmBtn = await this.getShowApprove()
             }
         },
         async  getAllSwap2(val) {
             if (val && this.token1) {
                 this.tokenVal2 = val
-                await this.getTokenScale()
-                this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
+                // await this.getTokenScale()
+                // this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
                 this.showCofirmBtn = await this.getShowApprove()
             }
         },
@@ -717,6 +717,7 @@ export default {
                     border-radius: 50%;
                     margin-right: 8px;
                     flex-shrink: 0;
+                    background: #fff;
                     img{
                         width: 100%;
                         height: 100%;
@@ -897,6 +898,7 @@ export default {
                         height: 40px;
                         border-radius: 50%;
                         margin-right: 10px;
+                        background: #fff;
                         img{
                             width: 100%;
                             height: 100%;

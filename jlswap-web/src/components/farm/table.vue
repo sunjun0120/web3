@@ -676,6 +676,7 @@ export default {
                     height: 40px;
                     border-radius: 50%;
                     margin-left:5px;
+                    background: #fff;
                     img{
                         width: 100%;
                         height: 100%;
@@ -715,6 +716,7 @@ export default {
                         width: 30px;
                         height: 30px;
                         border-radius: 50%;
+                        background: #fff;
                         margin-right: 10px;
                         img{
                             width: 100%;

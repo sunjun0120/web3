@@ -152,7 +152,7 @@ import { baseInfoStore } from '../store/index'
 
 import { ERC20 } from '../constants/abi/ERC20'
 import { routerAbi } from '../constants/abi/routerAbi'
-import { wmaticAbi } from '../constants/abi/wmaticAbi'
+import { wchainAbi } from '../constants/abi/wchainAbi'
 import C from '../constants/contractAddress'
 export default {
     name: '',
@@ -529,7 +529,7 @@ export default {
             const amountIn = getAllowance1
             let amountOutMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance2))).toString(), 'wei')
             let tx
-            const wmaticContract = new web3.eth.Contract(wmaticAbi, wmaticAddress)
+            const wmaticContract = new web3.eth.Contract(wchainAbi, wmaticAddress)
             if (this.token1 === nativeToken && this.token2 === nativeToErc20Token) {
                 tx = await wmaticContract.methods.deposit()
                 const that = this
@@ -1197,6 +1197,7 @@ export default {
                     height: 40px;
                     border-radius: 50%;
                     margin-right: 8px;
+                    background: #fff;
                     flex-shrink: 0;
                     img{
                         width: 100%;
@@ -1377,6 +1378,7 @@ export default {
                         width: 40px;
                         height: 40px;
                         border-radius: 50%;
+                        background: #fff;
                         flex-shrink: 0;
                         img{
                             width: 100%;

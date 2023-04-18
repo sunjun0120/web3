@@ -518,6 +518,7 @@ export default {
                     height: 40px;
                     border-radius: 50%;
                     margin-right: 8px;
+                    background: #fff;
                     flex-shrink: 0;
                     img{
                         width: 100%;
@@ -610,6 +611,7 @@ export default {
                         .tokenImg{
                             width: 40px;
                             height: 40px;
+                            background: #fff;
                             border-radius: 50%;
                             img{
                                 width: 100%;
@@ -700,6 +702,7 @@ export default {
                         width: 40px;
                         height: 40px;
                         border-radius: 50%;
+                        background: #fff;
                         img{
                             width: 100%;
                             height: 100%;

@@ -173,6 +173,7 @@ export default {
                 // background: #C4C2C2;
                 border-radius: 50%;
                 margin-right: 10px;
+                background: #fff;
                 img{
                     width: 100%;
                     height: 100%;

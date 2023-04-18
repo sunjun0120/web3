@@ -168,19 +168,24 @@ export default {
             let tvl = 0
             for (const i in this.allLp) {
                 const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                const reserves = await pool.methods.getReserves().call()
-                const token0 = this.allLp[i].from
-                const token1 = this.allLp[i].to
-                const decimals0 = this.getTokenDecimals(token0)
-                const decimals1 = this.getTokenDecimals(token1)
-                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
-                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
-                // const name0 = this.getTokenName(token0)
-                // const name1 = this.getTokenName(token1)
-                const token0Price = 1 / this.getTokenPrice(token0)
-                const token1Price = 1 / this.getTokenPrice(token1)
-                const lpValue = token0Balance * token0Price + token1Balance * token1Price
-                tvl = tvl + lpValue
+                // const reserves = await pool.methods.getReserves().call()
+                pool.methods.getReserves().call().then(res => {
+                    const reserves = res
+                    const token0 = this.allLp[i].from
+                    const token1 = this.allLp[i].to
+                    const decimals0 = this.getTokenDecimals(token0)
+                    const decimals1 = this.getTokenDecimals(token1)
+                    const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                    const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                    // const name0 = this.getTokenName(token0)
+                    // const name1 = this.getTokenName(token1)
+                    const token0Price = 1 / this.getTokenPrice(token0)
+                    const token1Price = 1 / this.getTokenPrice(token1)
+                    const lpValue = token0Balance * token0Price + token1Balance * token1Price
+                    tvl = tvl + lpValue
+                }).catch(err => {
+                    console.log(err)
+                })
             }
             const tvlValue = tvl.toFixed(2).toLocaleString()
             // const tvlValue = parseInt(tvl).toLocaleString()

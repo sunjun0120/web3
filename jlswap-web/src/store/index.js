@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import Web3 from 'web3'
 import utils from '../utils/storage'
-import { chainId } from '../constants/common'
+import { chainId, nativeToken, nativeToErc20Token, erc20Token1, chainName, tokenSymbol, rpc, explorerHost, tokenId } from '../constants/common'
 import { pairAbi } from '../constants/abi/pairAbi'
 import { lpList } from '../constants/lpList.js'
 import { tokenList } from '../constants/tokens'
@@ -22,16 +22,23 @@ export const baseInfoStore = defineStore('baseInfo', {
             for (const i in this.allLp) {
                 // 获取兑换比例
                 const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                const reserves = await scaleContract.methods.getReserves().call()
-                const token0 = this.allLp[i].from
-                const token1 = this.allLp[i].to
-                const decimals0 = this.getTokenDecimals(token0)
-                const decimals1 = this.getTokenDecimals(token1)
-                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
-                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
-                const exchangeRate = token1Balance / token0Balance
-                this.allLp[i].scale = exchangeRate
-                this.getBaseVal(token0, token1, exchangeRate)
+                // const reserves = await scaleContract.methods.getReserves().call()
+                scaleContract.methods.getReserves().call().then(res => {
+                    if (res) {
+                        const reserves = res
+                        const token0 = this.allLp[i].from
+                        const token1 = this.allLp[i].to
+                        const decimals0 = this.getTokenDecimals(token0)
+                        const decimals1 = this.getTokenDecimals(token1)
+                        const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                        const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                        const exchangeRate = token1Balance / token0Balance
+                        this.allLp[i].scale = exchangeRate
+                        this.getBaseVal(token0, token1, exchangeRate)
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
             }
         },
         // 获取兑换比例
@@ -40,26 +47,30 @@ export const baseInfoStore = defineStore('baseInfo', {
                 const web3 = new Web3(window.ethereum)
                 const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
                 scaleContract.methods.getReserves().call().then(res => {
-                    const reserves = res
-                    const token0 = this.allLp[i].from
-                    const token1 = this.allLp[i].to
-                    const decimals0 = this.getTokenDecimals(token0)
-                    const decimals1 = this.getTokenDecimals(token1)
-                    const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
-                    const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
-                    const exchangeRate = token1Balance / token0Balance
-                    Vue.set(this.allLp[i], 'scale', exchangeRate)
-                    this.getBaseVal(token0, token1, exchangeRate)
-                    const token0Price = 1 / this.getTokenPrice(token0)
-                    const token1Price = 1 / this.getTokenPrice(token1)
-                    const totalPrice = token0Balance * token0Price + token1Balance * token1Price
-                    Vue.set(this.allLp[i], 'totalPrice', totalPrice)
+                    if (res) {
+                        const reserves = res
+                        const token0 = this.allLp[i].from
+                        const token1 = this.allLp[i].to
+                        const decimals0 = this.getTokenDecimals(token0)
+                        const decimals1 = this.getTokenDecimals(token1)
+                        const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                        const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                        const exchangeRate = token1Balance / token0Balance
+                        Vue.set(this.allLp[i], 'scale', exchangeRate)
+                        this.getBaseVal(token0, token1, exchangeRate)
+                        const token0Price = 1 / this.getTokenPrice(token0)
+                        const token1Price = 1 / this.getTokenPrice(token1)
+                        const totalPrice = token0Balance * token0Price + token1Balance * token1Price
+                        Vue.set(this.allLp[i], 'totalPrice', totalPrice)
+                    }
                 })
                 scaleContract.methods.totalSupply().call().then(res => {
-                    const totalSupply0 = res
-                    const totalPrice = this.allLp[i].totalPrice
-                    const lpPrice0 = totalPrice / totalSupply0
-                    Vue.set(this.allLp[i], 'lpPrice', lpPrice0)
+                    if (res) {
+                        const totalSupply0 = res
+                        const totalPrice = this.allLp[i].totalPrice
+                        const lpPrice0 = totalPrice / totalSupply0
+                        Vue.set(this.allLp[i], 'lpPrice', lpPrice0)
+                    }
                 })
             }
         },
@@ -91,19 +102,19 @@ export const baseInfoStore = defineStore('baseInfo', {
         // 获取token单价
         getBaseVal(name0, name1, scale) {
             for (const i of this.allToken) {
-                if (i.name === 'USDC') {
+                if (i.name === erc20Token1) {
                     i.baseVal = 1
                 }
-                if (name0 === 'USDC') {
+                if (name0 === erc20Token1) {
                     if (i.name === name1) {
                         i.baseVal = scale
                     }
                 }
-                if (name0 === 'WMATIC' && name1 === 'USDC') {
+                if (name0 === nativeToErc20Token && name1 === erc20Token1) {
                     if (i.name === name0) {
                         i.baseVal = 1 / scale
                     }
-                    if (i.name === 'MATIC') {
+                    if (i.name === nativeToken) {
                         i.baseVal = 1 / scale
                     }
                 }
@@ -151,14 +162,14 @@ export const baseInfoStore = defineStore('baseInfo', {
                                 params: [
                                     {
                                         chainId: Web3.utils.numberToHex(that.chainId),
-                                        chainName: 'Polygon',
+                                        chainName: chainName,
                                         nativeCurrency: {
-                                            name: 'matic',
-                                            symbol: 'MATIC',
+                                            name: tokenId,
+                                            symbol: tokenSymbol,
                                             decimals: 18
                                         },
-                                        rpcUrls: ['https://polygon.llamarpc.com'],
-                                        blockExplorerUrls: ['https://polygonscan.com']
+                                        rpcUrls: [rpc],
+                                        blockExplorerUrls: [explorerHost]
                                     }
                                 ]
                             })

@@ -7,8 +7,8 @@ export const lpList = [
         farmAddress: '0x9992e4c034ba8304d931cdbab0a1092fe070bb16'
     },
     {
-        name: 'WMATIC-USDC',
-        from: 'WMATIC',
+        name: 'WEOS-USDC',
+        from: 'WEOS',
         to: 'USDC',
         address: '0xd7E604Aef39C9a1c95bd8Ce2D0cd2753AC86851F'
     },
@@ -19,8 +19,8 @@ export const lpList = [
         address: '0xDAA62b54a560FCd72C851b2EFBC629Ced390Cb20'
     },
     {
-        name: 'WMATIC-JLS',
-        from: 'WMATIC',
+        name: 'WEOS-JLS',
+        from: 'WEOS',
         to: 'JLS',
         address: '0xbB2e2263fe7B5b58d1bf5D90DAF223b074296181'
     }

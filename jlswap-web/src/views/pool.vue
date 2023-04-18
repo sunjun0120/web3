@@ -238,6 +238,7 @@ export default {
             this.loading = true
             for (const i in this.allLp) {
                 this.$set(this.allLp[i], 'close', true)
+
                 const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
                 // const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
                 pool.methods.balanceOf(this.fromAddress).call().then(res => {
@@ -248,7 +249,10 @@ export default {
                     } else {
                         this.$set(this.allLp[i], 'show', false)
                     }
+                }).catch(err => {
+                    console.log(err)
                 })
+
                 // this.allLp[i].lpBalance = lpBalance
                 // if (lpBalance > 0) {
                 //     this.$set(this.allLp[i], 'show', true)
@@ -378,6 +382,7 @@ export default {
                             height: 40px;
                             border-radius: 50%;
                             margin-right: 10px;
+                            background: #fff;
                             img{
                                 width: 100%;
                                 height: 100%;
