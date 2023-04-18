@@ -427,9 +427,11 @@ export default {
                     return false
                 } else {
                     if (Number(getAllowance1) > Number(allowance1)) {
-                        this.approveMsg = 'Approve ' + this.token2
-                    } else if (Number(getAllowance2) > Number(allowance2)) {
-                        this.approveMsg = 'Approve ' + this.token2
+                        this.approveMsg = 'Approve ' + this.token1
+                    } else {
+                        if (Number(getAllowance2) > Number(allowance2)) {
+                            this.approveMsg = 'Approve ' + this.token2
+                        }
                     }
                     return true
                 }
