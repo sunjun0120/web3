@@ -31,7 +31,6 @@ export const baseInfoStore = defineStore('baseInfo', {
                 const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
                 const exchangeRate = token1Balance / token0Balance
                 this.allLp[i].scale = exchangeRate
-                // console.log(exchangeRate)
                 this.getBaseVal(token0, token1, exchangeRate)
             }
         },
