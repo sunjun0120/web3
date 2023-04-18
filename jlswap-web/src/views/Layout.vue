@@ -52,6 +52,13 @@
                     <router-view></router-view>
                 </transition>
             </el-main>
+            <el-footer class="footer">
+                <div class="link">
+                    <div class="linkItem discord"></div>
+                    <div class="linkItem tg"></div>
+                    <div class="linkItem twitter" @click="goTwitter"></div>
+                </div>
+            </el-footer>
         </el-container>
     </div>
 </template>
@@ -105,6 +112,9 @@ export default {
     },
     methods: {
         ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'getTokenScale', 'connect']),
+        goTwitter() {
+            window.open('https://twitter.com/JLSwap0001')
+        },
         // 获取精度
         getTokenDecimals(val) {
             for (const i of this.allToken) {
@@ -345,6 +355,32 @@ export default {
         }
         .main{
             background: rgba(245,248,252,0.52);
+        }
+        .footer{
+            background: rgba(245,248,252,0.52);
+            height: 50px!important;
+            .link{
+                display: flex;
+                justify-content: flex-end;
+                .linkItem{
+                    width: 20px;
+                    height: 20px;
+                    margin-right: 20px;
+                    cursor: pointer;
+                }
+                .discord{
+                    background: url('../assets/discord.png') no-repeat;
+                    background-size: 100% 100%;
+                }
+                .tg{
+                    background: url('../assets/tg.png') no-repeat;
+                    background-size: 100% 100%;
+                }
+                .twitter{
+                    background: url('../assets/twitter.png') no-repeat;
+                    background-size: 100% 100%;
+                }
+            }
         }
     }
 }
