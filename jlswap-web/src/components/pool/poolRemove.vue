@@ -317,7 +317,7 @@ export default {
                     const amountTokenMin = amountBMin
                     const amountETHMin = amountAMin
                     const tx = await routerContract.methods.removeLiquidityETH(tokenAddress2, getLiquidity, amountTokenMin, amountETHMin, this.fromAddress, deadline)
-                    console.log(tx)
+                    // console.log(tx)
                     await web3.eth.sendTransaction({
                         from: this.fromAddress,
                         to: routerAddress,
@@ -370,7 +370,7 @@ export default {
                 }
             } else { // erc20+erc20
                 const tx = await routerContract.methods.removeLiquidity(tokenAddress1, tokenAddress2, getLiquidity, amountAMin, amountBMin, this.fromAddress, deadline)
-                console.log(tx)
+                // console.log(tx)
                 await web3.eth.sendTransaction({
                     from: this.fromAddress,
                     to: routerAddress,

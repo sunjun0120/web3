@@ -81,7 +81,7 @@
                                 <div :class="swapE?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale"></div>
                             </div>
                         </div>
-                        <div class="approveBtn" @click="approve" v-if='showCofirmBtn'>approve</div>
+                        <div class="approveBtn" @click="approve" v-if='showCofirmBtn'>{{approveMsg}}</div>
                         <div class='approveBtn' v-else @click="confirm">Confirm Supply</div>
                     </div>
                 </div>
@@ -163,6 +163,7 @@ export default {
             loading: false,
             showCofirmBtn: true,
             settings: 0.5,
+            approveMsg: 'Approve',
             chainId: chainId
         }
     },
@@ -208,8 +209,8 @@ export default {
         },
         async limitToken1() {
             if (this.token2 && this.tokenVal1) {
-                // await this.getTokenScale()
-                // this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+                await this.getTokenScale()
+                this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
                 this.showCofirmBtn = await this.getShowApprove()
             } else {
                 this.tokenVal2 = null
@@ -217,8 +218,8 @@ export default {
         },
         async  limitToken2() {
             if (this.token1 && this.tokenVal2) {
-                // await this.getTokenScale()
-                // this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
+                await this.getTokenScale()
+                this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
                 this.showCofirmBtn = await this.getShowApprove()
             } else {
                 this.tokenVal1 = null
@@ -227,16 +228,16 @@ export default {
         async  getAllSwap1(val) {
             if (val && this.token2) {
                 this.tokenVal1 = val
-                // await this.getTokenScale()
-                // this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
+                await this.getTokenScale()
+                this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
                 this.showCofirmBtn = await this.getShowApprove()
             }
         },
         async  getAllSwap2(val) {
             if (val && this.token1) {
                 this.tokenVal2 = val
-                // await this.getTokenScale()
-                // this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
+                await this.getTokenScale()
+                this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
                 this.showCofirmBtn = await this.getShowApprove()
             }
         },
@@ -403,6 +404,7 @@ export default {
                 tokenContract2 = new web3.eth.Contract(ERC20, tokenAddress2)
                 allowance2 = await tokenContract2.methods.allowance(this.fromAddress, routerAddress).call()
                 if (Number(getAllowance2) > Number(allowance2)) {
+                    this.approveMsg = 'Approve ' + this.token2
                     return true
                 } else {
                     return false
@@ -411,6 +413,7 @@ export default {
                 tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
                 allowance1 = await tokenContract1.methods.allowance(this.fromAddress, routerAddress).call()
                 if (Number(getAllowance1) > Number(allowance1)) {
+                    this.approveMsg = 'Approve ' + this.token1
                     return true
                 } else {
                     return false
@@ -423,6 +426,11 @@ export default {
                 if (Number(getAllowance1) <= Number(allowance1) && Number(getAllowance2) <= Number(allowance2)) {
                     return false
                 } else {
+                    if (Number(getAllowance1) > Number(allowance1)) {
+                        this.approveMsg = 'Approve ' + this.token2
+                    } else if (Number(getAllowance2) > Number(allowance2)) {
+                        this.approveMsg = 'Approve ' + this.token2
+                    }
                     return true
                 }
             }

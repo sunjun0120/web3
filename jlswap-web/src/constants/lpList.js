@@ -3,26 +3,26 @@ export const lpList = [
         name: 'USDC-USDT',
         from: 'USDC',
         to: 'USDT',
-        address: '0xcDcA692844c104dffC41Fd9B9a8797A17B922a42',
-        farmAddress: '0x9992e4c034ba8304d931cdbab0a1092fe070bb16'
+        address: '0xfD4fc631fA14887d60EEE547e466Abc046c3b453',
+        farmAddress: ''
     },
     {
-        name: 'WEOS-USDC',
-        from: 'WEOS',
-        to: 'USDC',
-        address: '0xd7E604Aef39C9a1c95bd8Ce2D0cd2753AC86851F'
-    },
-    {
-        name: 'USDC-JLS',
+        name: 'USDC-WEOS',
         from: 'USDC',
-        to: 'JLS',
-        address: '0xDAA62b54a560FCd72C851b2EFBC629Ced390Cb20'
+        to: 'WEOS',
+        address: '0x86A23A403F1fCda6E6e7092304E8C0237a7d6e24'
     },
     {
-        name: 'WEOS-JLS',
-        from: 'WEOS',
-        to: 'JLS',
-        address: '0xbB2e2263fe7B5b58d1bf5D90DAF223b074296181'
+        name: 'JLS-USDC',
+        from: 'JLS',
+        to: 'USDC',
+        address: '0xdFd89e40a0Fcb03B6699A617B3adAcF4ecF0FF97'
+    },
+    {
+        name: 'JLS-WEOS',
+        from: 'JLS',
+        to: 'WEOS',
+        address: '0x26399Bf706F81f75F4165CFE5dB3BE57b2b8cD22'
     }
 
 ]

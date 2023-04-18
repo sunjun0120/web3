@@ -22,23 +22,17 @@ export const baseInfoStore = defineStore('baseInfo', {
             for (const i in this.allLp) {
                 // 获取兑换比例
                 const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                // const reserves = await scaleContract.methods.getReserves().call()
-                scaleContract.methods.getReserves().call().then(res => {
-                    if (res) {
-                        const reserves = res
-                        const token0 = this.allLp[i].from
-                        const token1 = this.allLp[i].to
-                        const decimals0 = this.getTokenDecimals(token0)
-                        const decimals1 = this.getTokenDecimals(token1)
-                        const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
-                        const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
-                        const exchangeRate = token1Balance / token0Balance
-                        this.allLp[i].scale = exchangeRate
-                        this.getBaseVal(token0, token1, exchangeRate)
-                    }
-                }).catch(err => {
-                    console.log(err)
-                })
+                const reserves = await scaleContract.methods.getReserves().call()
+                const token0 = this.allLp[i].from
+                const token1 = this.allLp[i].to
+                const decimals0 = this.getTokenDecimals(token0)
+                const decimals1 = this.getTokenDecimals(token1)
+                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
+                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
+                const exchangeRate = token1Balance / token0Balance
+                this.allLp[i].scale = exchangeRate
+                // console.log(exchangeRate)
+                this.getBaseVal(token0, token1, exchangeRate)
             }
         },
         // 获取兑换比例
@@ -109,15 +103,24 @@ export const baseInfoStore = defineStore('baseInfo', {
                     if (i.name === name1) {
                         i.baseVal = scale
                     }
+                    if (name1 === nativeToErc20Token && i.name === nativeToken) {
+                        i.baseVal = 1 / scale
+                    }
                 }
-                if (name0 === nativeToErc20Token && name1 === erc20Token1) {
+                if (name1 === erc20Token1) {
                     if (i.name === name0) {
                         i.baseVal = 1 / scale
                     }
-                    if (i.name === nativeToken) {
-                        i.baseVal = 1 / scale
-                    }
                 }
+
+                // if (name0 === nativeToErc20Token && name1 === erc20Token1) {
+                //     if (i.name === name0) {
+                //         i.baseVal = 1 / scale
+                //     }
+                //     if (i.name === nativeToken) {
+                //         i.baseVal = 1 / scale
+                //     }
+                // }
             }
         },
         changeFromAddress(val) {

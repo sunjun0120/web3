@@ -82,7 +82,7 @@
                                 <div :class="swapE?'rotateScale el-icon-sort':'rotateScale el-icon-sort swapExc'" @click="changeScale"></div>
                             </div>
                         </div>
-                        <div class="approveBtn" @click="approve" v-if="showApprove">approve</div>
+                        <div class="approveBtn" @click="approve" v-if="showApprove">Approve</div>
                         <div class="approveBtn" @click="confirm" v-else>Confirm</div>
                     </div>
                 </div>
@@ -943,9 +943,10 @@ export default {
         },
         // 获取能接受的最小值
         getMinAvailable() {
-            const token1Scale = this.getScale(this.token1)
-            const token2Scale = this.getScale(this.token2)
-            const tokenVal = Number(this.tokenVal1) * (token2Scale / token1Scale) * (1 - this.settings / 100)
+            // const token1Scale = this.getScale(this.token1)
+            // const token2Scale = this.getScale(this.token2)
+            // const tokenVal = Number(this.tokenVal1) * (token2Scale / token1Scale) * (1 - this.settings / 100)
+            const tokenVal = Number(this.tokenVal2) * (1 - this.settings / 100)
             return this.getShowBalance(tokenVal)
         },
 
