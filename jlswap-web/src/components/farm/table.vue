@@ -128,6 +128,7 @@ export default {
         },
         pledgeMax(index) {
             if (Number(this.allLp[index].lpBalance) > 0) {
+                this.allLp[index].stakeMax = true
                 this.allLp[index].pledgeVal = this.allLp[index].lpBalance
                 this.allLp[index].hideError = true
                 this.showApprove(this.allLp[index], index)
@@ -135,7 +136,9 @@ export default {
         },
         releaseMax(index) {
             if (Number(this.allLp[index].personLpNum) > 0) {
-                this.allLp[index].releaseVal = this.allLp[index].personLpNum
+                this.allLp[index].releaseMax = true
+                const num = this.allLp[index].personLpNum
+                this.allLp[index].releaseVal = num
                 this.allLp[index].hideError2 = true
             }
         },
@@ -174,6 +177,7 @@ export default {
             })
         },
         async showApproveBtn(item, index) {
+            this.allLp[index].stakeMax = false
             if (Number(item.pledgeVal) <= Number(item.lpBalance) && Number(item.pledgeVal) > 0) {
                 this.allLp[index].hideError = true
                 this.showApprove(item, index)
@@ -182,6 +186,7 @@ export default {
             }
         },
         async showReleaseBtn(item, index) {
+            this.allLp[index].releaseMax = false
             if (Number(item.releaseVal) <= Number(item.personLpNum) && Number(item.releaseVal) > 0) {
                 this.allLp[index].hideError2 = true
             } else {
@@ -215,10 +220,16 @@ export default {
             const farmContract = new web3.eth.Contract(farmAbi, item.farmAddress)
             const pool = new web3.eth.Contract(pairAbi, item.address)
             const lpDecimals = await pool.methods.decimals().call()
-            const pledgeVal = item.pledgeVal * Math.pow(10, lpDecimals)
+            let pledgeVal
+            if (this.allLp[index].stakeMax) {
+                pledgeVal = await pool.methods.balanceOf(this.fromAddress).call()
+            } else {
+                pledgeVal = item.pledgeVal * Math.pow(10, lpDecimals)
+            }
+            if (String(pledgeVal).indexOf('.') > -1) {
+                pledgeVal = parseInt(pledgeVal)
+            }
             const tx = await farmContract.methods.stake(pledgeVal.toString())
-
-            console.log(tx)
             const that = this
             await web3.eth.sendTransaction({
                 from: this.fromAddress,
@@ -247,8 +258,17 @@ export default {
             const farmContract = new web3.eth.Contract(farmAbi, item.farmAddress)
             const pool = new web3.eth.Contract(pairAbi, item.address)
             const lpDecimals = await pool.methods.decimals().call()
-            const releaseVal = item.releaseVal * Math.pow(10, lpDecimals)
-            const tx = await farmContract.methods.withdraw(releaseVal)
+            let releaseVal
+            if (this.allLp[index].releaseMax) {
+                releaseVal = await farmContract.methods.balanceOf(this.fromAddress).call()
+            } else {
+                releaseVal = Number(item.releaseVal) * Math.pow(10, lpDecimals)
+            }
+
+            if (String(releaseVal).indexOf('.') > -1) {
+                releaseVal = parseInt(releaseVal)
+            }
+            const tx = await farmContract.methods.withdraw(releaseVal.toString())
             const that = this
             await web3.eth.sendTransaction({
                 from: this.fromAddress,
@@ -348,6 +368,7 @@ export default {
                 const lpBalance = res
                 const showBalance = lpBalance / Math.pow(10, lpDecimals)
                 const lpBalanceValue = this.allLp[i].lpPrice * lpBalance
+                this.$set(this.allLp[i], 'realLpBalance', res)
                 this.$set(this.allLp[i], 'lpBalance', showBalance.toFixed(lpDecimals))
                 this.$set(this.allLp[i], 'lpBalanceValue', lpBalanceValue)
             })
@@ -356,7 +377,7 @@ export default {
             farmContract.methods.balanceOf(this.fromAddress).call().then(res => {
                 const personLpNum = res
                 const personLpNumShow = personLpNum / Math.pow(10, lpDecimals)
-
+                this.$set(this.allLp[i], 'realPersonLpNum', personLpNum)
                 this.$set(this.allLp[i], 'personLpNum', personLpNumShow.toFixed(lpDecimals))
                 this.$set(this.allLp[i], 'personLpValue', personLpNum * this.allLp[i].lpPrice)
             })
@@ -364,6 +385,7 @@ export default {
             // 个人奖励token数量
             farmContract.methods.earned(this.fromAddress).call().then(res => {
                 const rewardCount = res
+                this.$set(this.allLp[i], 'realRewardCount', rewardCount)
                 this.$set(this.allLp[i], 'rewardCount', rewardCount / Math.pow(10, 18))
             })
             this.allLp[i].detailLoading = false
@@ -393,6 +415,7 @@ export default {
             const showBalance = lpBalance / Math.pow(10, lpDecimals)
             this.allLp[i].lpBalance = showBalance.toFixed(lpDecimals)
             const lpBalanceValue = this.allLp[i].lpPrice * lpBalance
+            this.$set(this.allLp[i], 'realLpBalance', lpBalance)
             this.allLp[i].lpBalanceValue = lpBalanceValue
             this.refresh2(i)
             this.allLp[i].detailLoading = false
@@ -411,6 +434,7 @@ export default {
             const personLpNum = await farmContract.methods.balanceOf(this.fromAddress).call()
             const lpDecimals = await pool.methods.decimals().call()
             const personLpNumShow = personLpNum / Math.pow(10, lpDecimals)
+            this.$set(this.allLp[i], 'realPersonLpNum', personLpNum)
             this.$set(this.allLp[i], 'personLpNum', personLpNumShow.toFixed(lpDecimals))
             this.$set(this.allLp[i], 'personLpValue', personLpNum * this.allLp[i].lpPrice)
 
@@ -458,6 +482,7 @@ export default {
             const farmContract = new web3.eth.Contract(farmAbi, this.allLp[i].farmAddress)
             farmContract.methods.earned(this.fromAddress).call().then(res => {
                 const rewardCount = res
+                this.$set(this.allLp[i], 'realRewardCount', rewardCount)
                 this.$set(this.allLp[i], 'rewardCount', rewardCount / Math.pow(10, 18))
             })
             this.allLp[i].detailLoading = false

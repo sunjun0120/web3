@@ -366,7 +366,7 @@ export default {
                 justify-content: flex-end;
                 .linkItem{
                     width: 20px;
-                    height: 20px;
+                    height: 21px;
                     margin-right: 20px;
                     cursor: pointer;
                 }
