@@ -139,12 +139,7 @@ export default {
             }
         },
         getProportion(val) {
-            let percent
-            if ((val / 100).length > 6) {
-                percent = (val / 100).toFixed(6)
-            } else {
-                percent = (val / 100)
-            }
+            const percent = (val * 100).toFixed(2)
             if (percent < 0.01) {
                 return '<0.01%'
             } else {
@@ -174,8 +169,8 @@ export default {
                             pool.methods.totalSupply().call().then(res1 => {
                                 const totalSupply = res1
                                 // this.allLp[i].proportion = lpBalance / totalSupply
-                                this.$set(this.allLp[i], 'proportion', lpBalance / totalSupply)
                                 pool.methods.getReserves().call().then(res => {
+                                    this.$set(this.allLp[i], 'proportion', lpBalance / totalSupply)
                                     const reserves = res
                                     const token0 = this.allLp[i].from
                                     const token1 = this.allLp[i].to
