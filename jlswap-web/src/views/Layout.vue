@@ -54,8 +54,12 @@
             </el-main>
             <el-footer class="footer">
                 <div class="link">
-                    <div class="linkItem discord"></div>
-                    <div class="linkItem tg"></div>
+                    <el-tooltip class="item" effect="dark" content="coming soon" placement="top">
+                        <div class="linkItem discord"></div>
+                    </el-tooltip>
+                    <el-tooltip class="item" effect="dark" content="coming soon" placement="top">
+                        <div class="linkItem tg"></div>
+                    </el-tooltip>
                     <div class="linkItem twitter" @click="goTwitter"></div>
                 </div>
             </el-footer>
