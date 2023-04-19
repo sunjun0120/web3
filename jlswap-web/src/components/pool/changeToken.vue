@@ -21,7 +21,7 @@
 <script>
 import Web3 from 'web3'
 import { ERC20 } from '../../constants/abi/ERC20'
-import { nativeToken, nativeToErc20Token } from '../../constants/common'
+import { nativeToken, nativeToErc20Token, farmToken, erc20Token1, erc20Token2 } from '../../constants/common'
 import { mapState } from 'pinia'
 import { baseInfoStore } from '../../store/index'
 export default {
@@ -41,16 +41,44 @@ export default {
         async show1(token1, token2) {
             this.tableData = this.allToken
             for (const i in this.tableData) {
-                if (this.tableData[i].name === token1 || this.tableData[i].name === token2) {
-                    this.tableData[i].disable = true
-                } else {
-                    this.tableData[i].disable = false
+                // if (this.tableData[i].name === token1 || this.tableData[i].name === token2) {
+                //     this.tableData[i].disable = true
+                // } else {
+                //     this.tableData[i].disable = false
+                // }
+                // if ((token2 === nativeToErc20Token || token2 === nativeToken) && this.tableData[i].name === nativeToErc20Token) {
+                //     this.tableData[i].disable = true
+                // }
+                // if ((token2 === nativeToErc20Token || token2 === nativeToken) && this.tableData[i].name === nativeToken) {
+                //     this.tableData[i].disable = true
+                // }
+                if (token2 === erc20Token2) {
+                    if (this.tableData[i].name === erc20Token1) {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
                 }
-                if ((token2 === nativeToErc20Token || token2 === nativeToken) && this.tableData[i].name === nativeToErc20Token) {
-                    this.tableData[i].disable = true
+                if (token2 === farmToken) {
+                    if (this.tableData[i].name === erc20Token1 || this.tableData[i].name === nativeToken || this.tableData[i].name === nativeToErc20Token) {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
                 }
-                if ((token2 === nativeToErc20Token || token2 === nativeToken) && this.tableData[i].name === nativeToken) {
-                    this.tableData[i].disable = true
+                if (token2 === erc20Token1) {
+                    if (this.tableData[i].name === erc20Token1) {
+                        this.tableData[i].disable = true
+                    } else {
+                        this.tableData[i].disable = false
+                    }
+                }
+                if (token2 === nativeToErc20Token || token2 === nativeToken) {
+                    if (this.tableData[i].name === farmToken || this.tableData[i].name === erc20Token1) {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
                 }
             }
             this.switchToken = 1
@@ -62,16 +90,44 @@ export default {
         async show2(token1, token2) {
             this.tableData = this.allToken
             for (const i in this.tableData) {
-                if (this.tableData[i].name === token1 || this.tableData[i].name === token2) {
-                    this.tableData[i].disable = true
-                } else {
-                    this.tableData[i].disable = false
+                // if (this.tableData[i].name === token1 || this.tableData[i].name === token2) {
+                //     this.tableData[i].disable = true
+                // } else {
+                //     this.tableData[i].disable = false
+                // }
+                // if ((token1 === nativeToErc20Token || token1 === nativeToken) && this.tableData[i].name === nativeToErc20Token) {
+                //     this.tableData[i].disable = true
+                // }
+                // if ((token1 === nativeToErc20Token || token1 === nativeToken) && this.tableData[i].name === nativeToken) {
+                //     this.tableData[i].disable = true
+                // }
+                if (token1 === erc20Token2) {
+                    if (this.tableData[i].name === erc20Token1) {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
                 }
-                if ((token1 === nativeToErc20Token || token1 === nativeToken) && this.tableData[i].name === nativeToErc20Token) {
-                    this.tableData[i].disable = true
+                if (token1 === farmToken) {
+                    if (this.tableData[i].name === erc20Token1 || this.tableData[i].name === nativeToken || this.tableData[i].name === nativeToErc20Token) {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
                 }
-                if ((token1 === nativeToErc20Token || token1 === nativeToken) && this.tableData[i].name === nativeToken) {
-                    this.tableData[i].disable = true
+                if (token1 === erc20Token1) {
+                    if (this.tableData[i].name === erc20Token1) {
+                        this.tableData[i].disable = true
+                    } else {
+                        this.tableData[i].disable = false
+                    }
+                }
+                if (token1 === nativeToErc20Token || token1 === nativeToken) {
+                    if (this.tableData[i].name === farmToken || this.tableData[i].name === erc20Token1) {
+                        this.tableData[i].disable = false
+                    } else {
+                        this.tableData[i].disable = true
+                    }
                 }
             }
             this.switchToken = 2
