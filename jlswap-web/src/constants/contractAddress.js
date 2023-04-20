@@ -1,4 +1,4 @@
 export default {
-    factory_address: '0xf50f5559EF3A65a4d9c1c0e9Ef270CD7b537C761',
-    router_address: '0x3caE6A376C328F849F5E942180069AA4C339773B'
+    factory_address: '0xC3f1895a9Fe38B30193C81088d10bb6AffCC51f1',
+    router_address: '0x45D8B3A80060976b85c7Ce58bfB2c514a4503927'
 }

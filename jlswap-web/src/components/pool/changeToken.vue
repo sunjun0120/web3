@@ -80,6 +80,9 @@ export default {
                         this.tableData[i].disable = true
                     }
                 }
+                if (!token2) {
+                    this.tableData[i].disable = false
+                }
             }
             this.switchToken = 1
             this.loading = true
@@ -128,6 +131,9 @@ export default {
                     } else {
                         this.tableData[i].disable = true
                     }
+                }
+                if (!token1) {
+                    this.tableData[i].disable = false
                 }
             }
             this.switchToken = 2

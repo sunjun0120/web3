@@ -615,6 +615,8 @@ export default {
         async init() {
             this.tokenVal1 = null
             this.tokenVal2 = null
+            this.balance1 = 0
+            this.balance2 = 0
             // 获取余额
             this.loading = true
             if (this.token1 || this.token2) {

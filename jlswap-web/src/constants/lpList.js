@@ -3,29 +3,29 @@ export const lpList = [
         name: 'USDC-USDT',
         from: 'USDC',
         to: 'USDT',
-        address: '0xfD4fc631fA14887d60EEE547e466Abc046c3b453',
-        farmAddress: '0xf372Be6Aa458E3ea9FF4D8379155374fD1781628'
+        address: '0x2CcF50A0dC2d21aB29DbE2fBdd1f5d28B7776773',
+        farmAddress: '0x29E954eFF1157cbD5b76A98cc198FC8987F7aA42'
     },
     {
         name: 'USDC-WEOS',
         from: 'USDC',
         to: 'WEOS',
-        address: '0x86A23A403F1fCda6E6e7092304E8C0237a7d6e24',
-        farmAddress: '0xBb24247baD993c1364FF0f9A1b0F999a45456D93'
+        address: '0xb552bBB3eF3e52FAc4D09Da7d660616Ec3E01ef7',
+        farmAddress: '0x13470dEe5460637BB07997B76FFc6E218f7aBDeb'
     },
     {
         name: 'JLS-USDC',
         from: 'JLS',
         to: 'USDC',
-        address: '0xdFd89e40a0Fcb03B6699A617B3adAcF4ecF0FF97',
-        farmAddress: '0x2F2685371F2D2B7A4d75138B3C0e7006cE1D152E'
+        address: '0x4641267E0C5307e1A164a870046c35c860241b2B',
+        farmAddress: '0x7e5145a5524Ec02222A6346153De0Ca1Fd37Ddc1'
     },
     {
         name: 'JLS-WEOS',
         from: 'JLS',
         to: 'WEOS',
-        address: '0x26399Bf706F81f75F4165CFE5dB3BE57b2b8cD22',
-        farmAddress: '0x9A9f09dBB6Df6F680c4F28D6Ca17106CaE7237fF'
+        address: '0x343b458ba5748CD44d43fFA9810eEF5998b5D803',
+        farmAddress: '0x6C97382eF1C3538B16222AF21b536Ff930763DF9'
     }
 
 ]
