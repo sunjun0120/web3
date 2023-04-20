@@ -13,12 +13,14 @@ export const baseInfoStore = defineStore('baseInfo', {
         network: utils.load('network'),
         chainId: chainId,
         allLp: lpList,
-        allToken: tokenList
+        allToken: tokenList,
+        topTvl: '$0.00'
     }),
     actions: {
         // 获取兑换比例
         async getTokenScale() {
             const web3 = new Web3(window.ethereum)
+            let tvl = 0
             for (const i in this.allLp) {
                 // 获取兑换比例
                 const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
@@ -36,7 +38,13 @@ export const baseInfoStore = defineStore('baseInfo', {
                 const exchangeRate = token1Balance / token0Balance
                 this.allLp[i].scale = exchangeRate
                 this.getBaseVal(token0, token1, exchangeRate)
+                const token0Price = 1 / this.getTokenPrice(token0)
+                const token1Price = 1 / this.getTokenPrice(token1)
+                const lpValue = token0Balance * token0Price + token1Balance * token1Price
+                tvl = tvl + lpValue
             }
+            const tvlValue = tvl.toFixed(2).toLocaleString()
+            this.topTvl = '$' + tvlValue
         },
         // 获取兑换比例
         getTokenScale2() {

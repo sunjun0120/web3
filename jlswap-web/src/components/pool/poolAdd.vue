@@ -622,7 +622,7 @@ export default {
             if (this.token1 || this.token2) {
                 await this.getAllBalance()
                 // 获取兑换比例
-                // this.getTokenScale()
+                this.getTokenScale()
                 const a = this.token1
                 const b = this.token2
                 for (const i of this.allToken) {

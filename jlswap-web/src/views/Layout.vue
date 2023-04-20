@@ -36,9 +36,10 @@
                             </template>
                         </el-menu>
                     </div>
+                    <div class="bridge" @click="goBridge">Bridge</div>
                 </div>
                 <div class="right">
-                    <div class="all money">TVL<span class="moneyNum">{{all}}</span></div>
+                    <div class="all money">TVL<span class="moneyNum">{{topTvl}}</span></div>
                     <div class="money">JLS<span  class="moneyNum">{{farmTokenPrice}}</span></div>
                     <div class="connectWallet" @click="connect" v-if="!fromAddress">Connect Wallet</div>
                     <div v-else>
@@ -103,7 +104,7 @@ export default {
         }
     },
     computed: {
-        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'allLp']),
+        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'allLp', 'topTvl']),
         currentActivePath () {
             const path = this.$route.path
             const params = this.$route.params
@@ -118,6 +119,9 @@ export default {
         ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'getTokenScale', 'connect']),
         goTwitter() {
             window.open('https://twitter.com/JLSwap0001')
+        },
+        goBridge() {
+            window.open('https://app.multichain.org/#/router')
         },
         // 获取精度
         getTokenDecimals(val) {
@@ -202,7 +206,7 @@ export default {
                 }
                 if (this.network) {
                     await this.getTokenScale()
-                    this.getTvl()
+                    // this.getTvl()
                     for (const i of this.allToken) {
                         if (i.name === farmToken) {
                             const jlsPrice = 1 / i.baseVal
@@ -303,6 +307,15 @@ export default {
                         height: 100%;
                         border-radius: 50%;
                     }
+                }
+                .bridge{
+                    margin-left: 3.125vw;
+                    cursor: pointer;
+                    font-size: 18px;
+                }
+                .bridge:hover{
+                    text-decoration: underline;
+                    color: #448aff;
                 }
             }
             .right{
