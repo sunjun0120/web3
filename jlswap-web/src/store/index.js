@@ -25,10 +25,10 @@ export const baseInfoStore = defineStore('baseInfo', {
                 // 获取兑换比例
                 const scaleContract = new web3.eth.Contract(pairAbi, this.allLp[i].address)
                 const reserves = await scaleContract.methods.getReserves().call()
-                // const token2 = await scaleContract.methods.token0().call()
-                // const token3 = await scaleContract.methods.token1().call()
-                // console.log(token2)
-                // console.log(token3)
+                const token2 = await scaleContract.methods.token0().call()
+                const token3 = await scaleContract.methods.token1().call()
+                console.log(token2)
+                console.log(token3)
                 const token0 = this.allLp[i].from
                 const token1 = this.allLp[i].to
                 const decimals0 = this.getTokenDecimals(token0)
