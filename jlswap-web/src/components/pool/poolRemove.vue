@@ -282,8 +282,17 @@ export default {
                 }
             }
             const scale = this.tokenVal / 100
-            const balance1 = this.token1Balance * scale
-            const balance2 = this.token2Balance * scale
+            let balance1
+            let balance2
+            if (scale === 1) {
+                balance1 = this.token1Balance
+                balance2 = this.token2Balance
+            } else {
+                balance1 = this.token1Balance * scale
+                balance2 = this.token2Balance * scale
+            }
+            // const balance1 = this.token1Balance * scale
+            // const balance2 = this.token2Balance * scale
 
             if (decimals1 === 18) {
                 // getAllowance1 = web3.utils.toWei(balance1.toString(), 'ether')

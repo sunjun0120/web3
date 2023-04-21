@@ -121,6 +121,8 @@ export default {
                     if (this.fromAddress) {
                         if (!this.allLp[i].close) {
                             this.getDetailInfo(index)
+                        } else {
+                            window.clearInterval(this.allLp[i].timer)
                         }
                     }
                 }
@@ -389,6 +391,15 @@ export default {
                 this.$set(this.allLp[i], 'rewardCount', rewardCount / Math.pow(10, 18))
             })
             this.allLp[i].detailLoading = false
+            const that = this
+            this.allLp[i].timer = window.setInterval(() => {
+                farmContract.methods.earned(that.fromAddress).call().then(res => {
+                    const rewardCount = res
+                    that.$set(that.allLp[i], 'realRewardCount', rewardCount)
+                    that.$set(that.allLp[i], 'rewardCount', rewardCount / Math.pow(10, 18))
+                    console.log('rewardCount')
+                })
+            }, 1000)
         },
         initNoUser() {
             for (const i in this.allLp) {
