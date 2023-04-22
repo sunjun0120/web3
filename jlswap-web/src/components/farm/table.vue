@@ -679,6 +679,13 @@ export default {
         this.init()
         this.onChangeAccount()
         this.onChangeChain()
+    },
+    beforeDestroy() {
+        for (const i in this.allLp) {
+            if (this.allLp[i].timer) {
+                window.clearInterval(this.allLp[i].timer)
+            }
+        }
     }
 }
 </script>
