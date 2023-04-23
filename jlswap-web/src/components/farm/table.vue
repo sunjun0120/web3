@@ -856,6 +856,7 @@ export default {
                     flex:1;
                     padding:0 20px;
                     display: flex;
+                    user-select: none;
                     .farmLeft,.farmMiddle,.farmRight{
                         flex:1;
                         width: 0;

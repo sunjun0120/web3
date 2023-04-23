@@ -62,6 +62,7 @@
                         <div class="linkItem tg"></div>
                     </el-tooltip>
                     <div class="linkItem twitter" @click="goTwitter"></div>
+                    <div class="linkItem github" @click="goGit"></div>
                 </div>
             </el-footer>
         </el-container>
@@ -72,7 +73,6 @@ import { chainId, farmToken } from '../constants/common'
 import Web3 from 'web3'
 import { mapState, mapActions } from 'pinia'
 import { baseInfoStore } from '../store/index'
-import { pairAbi } from '../constants/abi/pairAbi'
 export default {
     name: '',
     data () {
@@ -123,6 +123,9 @@ export default {
         goBridge() {
             window.open('https://app.multichain.org/#/router')
         },
+        goGit() {
+            window.open('https://github.com/jlswap')
+        },
         // 获取精度
         getTokenDecimals(val) {
             for (const i of this.allToken) {
@@ -171,27 +174,6 @@ export default {
                 return '0.00'
             }
         },
-        async getTvl() {
-            const web3 = new Web3(window.ethereum)
-            let tvl = 0
-            for (const i in this.allLp) {
-                const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                const reserves = await pool.methods.getReserves().call()
-                const token0 = this.allLp[i].from
-                const token1 = this.allLp[i].to
-                const decimals0 = this.getTokenDecimals(token0)
-                const decimals1 = this.getTokenDecimals(token1)
-                const token0Balance = reserves._reserve0 / Math.pow(10, decimals0)
-                const token1Balance = reserves._reserve1 / Math.pow(10, decimals1)
-                const token0Price = 1 / this.getTokenPrice(token0)
-                const token1Price = 1 / this.getTokenPrice(token1)
-                const lpValue = token0Balance * token0Price + token1Balance * token1Price
-                tvl = tvl + lpValue
-            }
-            const tvlValue = tvl.toFixed(2).toLocaleString()
-            // const tvlValue = parseInt(tvl).toLocaleString()
-            this.all = '$' + tvlValue
-        },
         async init() {
             // 初始化
             const web3 = new Web3(window.ethereum)
@@ -206,7 +188,6 @@ export default {
                 }
                 if (this.network) {
                     await this.getTokenScale()
-                    // this.getTvl()
                     for (const i of this.allToken) {
                         if (i.name === farmToken) {
                             const jlsPrice = 1 / i.baseVal
@@ -393,6 +374,10 @@ export default {
                 }
                 .twitter{
                     background: url('../assets/twitter.png') no-repeat;
+                    background-size: 100% 100%;
+                }
+                .github{
+                    background: url('../assets/github.png') no-repeat;
                     background-size: 100% 100%;
                 }
             }
