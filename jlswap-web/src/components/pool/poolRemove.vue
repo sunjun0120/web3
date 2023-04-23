@@ -293,20 +293,28 @@ export default {
             }
             // const balance1 = this.token1Balance * scale
             // const balance2 = this.token2Balance * scale
-
-            if (decimals1 === 18) {
-                // getAllowance1 = web3.utils.toWei(balance1.toString(), 'ether')
-                getAllowance1 = balance1 * Math.pow(10, 18)
+            if (scale === 1) {
+                const web3 = new Web3(window.ethereum)
+                const pool = new web3.eth.Contract(pairAbi, this.pairAddress)
+                const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+                const totalSupply = await pool.methods.totalSupply().call()
+                const reserves = await pool.methods.getReserves().call()
+                const proportion = lpBalance / totalSupply
+                const token0Balance = parseInt(reserves._reserve0 * proportion)
+                const token1Balance = parseInt(reserves._reserve1 * proportion)
+                getAllowance1 = token0Balance
+                getAllowance2 = token1Balance
             } else {
-                // getAllowance1 = web3.utils.toWei(balance1.toString(), 'lovelace')
-                getAllowance1 = balance1 * Math.pow(10, 6)
-            }
-            if (decimals2 === 18) {
-                // getAllowance2 = web3.utils.toWei(balance2.toString(), 'ether')
-                getAllowance2 = balance2 * Math.pow(10, 18)
-            } else {
-                // getAllowance2 = web3.utils.toWei(balance2.toString(), 'lovelace')
-                getAllowance2 = balance2 * Math.pow(10, 6)
+                if (decimals1 === 18) {
+                    getAllowance1 = balance1 * Math.pow(10, 18)
+                } else {
+                    getAllowance1 = balance1 * Math.pow(10, 6)
+                }
+                if (decimals2 === 18) {
+                    getAllowance2 = balance2 * Math.pow(10, 18)
+                } else {
+                    getAllowance2 = balance2 * Math.pow(10, 6)
+                }
             }
 
             const getMinAllowance1 = parseInt(getAllowance1 * (1 - Number(this.settings) / 100))
