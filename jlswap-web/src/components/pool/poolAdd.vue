@@ -260,6 +260,13 @@ export default {
                 }
             }
         },
+        getAddress(token) {
+            for (const i of this.allToken) {
+                if (i.name === token) {
+                    return i.address
+                }
+            }
+        },
         async getBalance(token) {
             const web3 = new Web3(window.ethereum)
             if (token === nativeToken) {
