@@ -168,7 +168,7 @@ export default {
         // 保留几位小数
         getAprShow(val) {
             if (val) {
-                const balance = Math.round(val * Math.pow(10, 6)) / Math.pow(10, 6)
+                const balance = Math.floor(val * Math.pow(10, 6)) / Math.pow(10, 6)
                 return balance
             } else {
                 return '0.00'

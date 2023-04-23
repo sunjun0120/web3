@@ -227,7 +227,7 @@ export default {
         },
         async  getAllSwap1(val) {
             if (val && this.token2) {
-                this.tokenVal1 = val
+                this.tokenVal1 = this.getShowBalance(val)
                 await this.getTokenScale()
                 this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
                 this.showCofirmBtn = await this.getShowApprove()
@@ -235,7 +235,7 @@ export default {
         },
         async  getAllSwap2(val) {
             if (val && this.token1) {
-                this.tokenVal2 = val
+                this.tokenVal2 = this.getShowBalance(val)
                 await this.getTokenScale()
                 this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
                 this.showCofirmBtn = await this.getShowApprove()
@@ -549,7 +549,7 @@ export default {
         },
         // 保留5位小数
         getShowBalance(val) {
-            const balance = Math.round(val * Math.pow(10, 5)) / Math.pow(10, 5)
+            const balance = Math.floor(val * Math.pow(10, 5)) / Math.pow(10, 5)
             return balance
         },
         // 获取代币余额

@@ -143,7 +143,7 @@ export default {
             this.loading = false
         },
         getShowBalance(val) {
-            const balance = Math.round(val * Math.pow(10, 5)) / Math.pow(10, 5)
+            const balance = Math.floor(val * Math.pow(10, 5)) / Math.pow(10, 5)
             return balance
         },
         changeToken(item) {
