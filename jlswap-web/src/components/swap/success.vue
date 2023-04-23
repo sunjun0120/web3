@@ -16,6 +16,7 @@
     </div>
 </template>
 <script>
+import { explorerHost } from '../../constants/common'
 export default {
     name: '',
     data () {
@@ -30,7 +31,7 @@ export default {
             this.confirmWait = true
         },
         goUrl() {
-            window.open('https://polygonscan.com/tx/' + this.url)
+            window.open(explorerHost + '/tx/' + this.url)
         }
     }
 }
