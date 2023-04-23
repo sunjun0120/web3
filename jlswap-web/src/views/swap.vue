@@ -177,6 +177,7 @@ export default {
             settings: 0.5,
             showSwapMessage: '',
             showSwapMessage2: '',
+            maxFlag: false,
             chainId: chainId,
             nativeToken: nativeToken
         }
@@ -361,7 +362,7 @@ export default {
                 const decimals2 = this.getDecimals(this.token2)
                 this.tokenVal2 = this.getShowBalance(tokenValDemo / Math.pow(10, decimals2))
                 this.showApprove = await this.getShowApprove()
-
+                this.maxFlag = false
                 const message = await this.getScaleTip(false)
                 this.showSwapMessage = message
                 const message2 = await this.getScaleTip(false)
@@ -377,7 +378,7 @@ export default {
                 const decimals2 = this.getDecimals(this.token1)
                 this.tokenVal1 = this.getShowBalance(tokenValDemo / Math.pow(10, decimals2))
                 this.showApprove = await this.getShowApprove()
-
+                this.maxFlag = false
                 const message = await this.getScaleTip(false)
                 this.showSwapMessage = message
                 const message2 = await this.getScaleTip(false)
@@ -388,8 +389,10 @@ export default {
         },
         async getAllSwap(val) {
             if (val) {
-                this.tokenVal1 = this.getShowBalance(val)
-                this.limitToken1()
+                // this.tokenVal1 = this.getShowBalance(val)
+                this.tokenVal1 = val
+                await this.limitToken1()
+                this.maxFlag = true
             }
         },
         getImg(val) {
@@ -474,6 +477,18 @@ export default {
             const amountOut = routerContract.methods.getAmountsOut(amountIn, path).call()
             return amountOut
         },
+        async getBalance(token) {
+            const web3 = new Web3(window.ethereum)
+            if (token === nativeToken) {
+                const balance = await web3.eth.getBalance(this.fromAddress).call()
+                return balance
+            } else {
+                const contractAddress = this.getAddress(token)
+                const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+                const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
+                return balance
+            }
+        },
         async sureConfirm() {
             this.confirmExchange = false
             const message1 = this.tokenVal1 + ' ' + this.token1
@@ -516,16 +531,21 @@ export default {
                     wmaticAddress = i.address
                 }
             }
-            if (decimals1 === 18) {
-                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
+            if (this.maxFlag) {
+                getAllowance1 = await this.getBalance(this.token1)
             } else {
-                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
+                if (decimals1 === 18) {
+                    getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
+                } else {
+                    getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
+                }
             }
             if (decimals2 === 18) {
                 getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'ether')
             } else {
                 getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
             }
+
             const amountIn = getAllowance1
             let amountOutMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(getAllowance2))).toString(), 'wei')
             let tx
@@ -977,17 +997,6 @@ export default {
                 if (i.name === token) {
                     return i.decimals
                 }
-            }
-        },
-        getOtherCount(index, val) {
-            const token1Scale = this.getScale(this.token1)
-            const token2Scale = this.getScale(this.token2)
-            if (index === 1) {
-                const tokenVal = Number(val) * (token2Scale / token1Scale)
-                return this.getShowBalance(tokenVal)
-            } else if (index === 2) {
-                const tokenVal = Number(val) * (token1Scale / token2Scale)
-                return this.getShowBalance(tokenVal)
             }
         },
         initInfo() {

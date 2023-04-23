@@ -162,6 +162,8 @@ export default {
             confirmExchange: false,
             loading: false,
             showCofirmBtn: true,
+            maxFlag1: false,
+            maxFlag2: false,
             settings: 0.5,
             approveMsg: 'Approve',
             chainId: chainId
@@ -215,6 +217,8 @@ export default {
             } else {
                 this.tokenVal2 = null
             }
+            this.maxFlag1 = false
+            this.maxFlag2 = false
         },
         async  limitToken2() {
             if (this.token1 && this.tokenVal2) {
@@ -224,21 +228,29 @@ export default {
             } else {
                 this.tokenVal1 = null
             }
+            this.maxFlag1 = false
+            this.maxFlag2 = false
         },
         async  getAllSwap1(val) {
             if (val && this.token2) {
                 this.tokenVal1 = this.getShowBalance(val)
+                // this.tokenVal1 = val
                 await this.getTokenScale()
                 this.tokenVal2 = this.getOtherCount(1, this.tokenVal1)
                 this.showCofirmBtn = await this.getShowApprove()
+                this.maxFlag1 = true
+                this.maxFlag2 = false
             }
         },
         async  getAllSwap2(val) {
             if (val && this.token1) {
                 this.tokenVal2 = this.getShowBalance(val)
+                // this.tokenVal2 = val
                 await this.getTokenScale()
                 this.tokenVal1 = this.getOtherCount(2, this.tokenVal2)
                 this.showCofirmBtn = await this.getShowApprove()
+                this.maxFlag1 = false
+                this.maxFlag2 = true
             }
         },
         getImg(val) {
@@ -246,6 +258,18 @@ export default {
                 if (i.name === val) {
                     return i.icon
                 }
+            }
+        },
+        async getBalance(token) {
+            const web3 = new Web3(window.ethereum)
+            if (token === nativeToken) {
+                const balance = await web3.eth.getBalance(this.fromAddress).call()
+                return balance
+            } else {
+                const contractAddress = this.getAddress(token)
+                const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+                const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
+                return balance
             }
         },
         changeScale() {
@@ -275,16 +299,25 @@ export default {
                     decimals2 = i.decimals
                 }
             }
-            if (decimals1 === 18) {
-                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
+            if (this.maxFlag1) {
+                getAllowance1 = await this.getBalance(this.token1)
             } else {
-                getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
+                if (decimals1 === 18) {
+                    getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'ether')
+                } else {
+                    getAllowance1 = web3.utils.toWei(this.tokenVal1.toString(), 'lovelace')
+                }
             }
-            if (decimals2 === 18) {
-                getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'ether')
+            if (this.maxFlag2) {
+                getAllowance2 = await this.getBalance(this.token2)
             } else {
-                getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
+                if (decimals2 === 18) {
+                    getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'ether')
+                } else {
+                    getAllowance2 = web3.utils.toWei(this.tokenVal2.toString(), 'lovelace')
+                }
             }
+
             const routerAddress = C.router_address
             const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
             const amountAMin = web3.utils.toWei(parseInt(((1 - Number(this.settings) / 100) * Number(this.tokenVal1))).toString(), 'wei')
@@ -606,9 +639,11 @@ export default {
             if (index === 1) {
                 const tokenVal = Number(val) * (token2Scale / token1Scale)
                 return this.getShowBalance(tokenVal)
+                // return tokenVal
             } else if (index === 2) {
                 const tokenVal = Number(val) * (token1Scale / token2Scale)
                 return this.getShowBalance(tokenVal)
+                // return tokenVal
             }
         },
         // 初始化
