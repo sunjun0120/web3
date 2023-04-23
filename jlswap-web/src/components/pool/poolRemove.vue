@@ -304,6 +304,8 @@ export default {
                 const token1Balance = parseInt(reserves._reserve1 * proportion)
                 getAllowance1 = token0Balance
                 getAllowance2 = token1Balance
+                console.log(getAllowance1)
+                console.log(getAllowance2)
             } else {
                 if (decimals1 === 18) {
                     getAllowance1 = balance1 * Math.pow(10, 18)
@@ -326,7 +328,15 @@ export default {
             const deadline = Math.floor(Date.now() / 1000) + 60 * 60// 1小时后过期
             const pool = new web3.eth.Contract(pairAbi, this.pairAddress)
             const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-            const liquidity = parseInt(lpBalance * scale)
+            let liquidity
+            if (scale === 1) {
+                liquidity = lpBalance
+            } else {
+                liquidity = parseInt(lpBalance * scale)
+            }
+            // console.log(lpBalance)
+            // const liquidity = parseInt(lpBalance * scale)
+            // console.log(liquidity)
             const getLiquidity = web3.utils.toWei(liquidity.toString(), 'wei')
             const that = this
             if (this.token1 === nativeToErc20Token || this.token2 === nativeToErc20Token) {
