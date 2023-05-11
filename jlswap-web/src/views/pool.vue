@@ -67,7 +67,8 @@ import { chainId } from '../constants/common'
 import { pairAbi } from '../constants/abi/pairAbi'
 import { mapState, mapActions } from 'pinia'
 import { baseInfoStore } from '../store/index'
-
+import C from '../constants/contractAddress'
+import { multicallAbi } from '../constants/abi/multicall'
 import PoolAdd from '../components/pool/poolAdd.vue'
 import PoolRemove from '../components/pool/poolRemove.vue'
 import ConfirmWait from '../components/swap/waitDia.vue'
@@ -87,7 +88,7 @@ export default {
         }
     },
     computed: {
-        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'allLp'])
+        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'allLp', 'provider'])
     },
     methods: {
         ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'connect']),
@@ -147,7 +148,7 @@ export default {
             }
         },
         getTokenName(val) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             for (const i in this.allToken) {
                 if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
                     return this.allToken[i].name
@@ -161,29 +162,58 @@ export default {
                     if (!this.allLp[i].close) {
                         // 获取池子里token额度和兑换比例
                         this.lpLoading = true
-                        const web3 = new Web3(window.ethereum)
+                        const web3 = new Web3(this.provider)
                         const pool = new web3.eth.Contract(pairAbi, address)
-                        // const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-                        pool.methods.balanceOf(this.fromAddress).call().then(res => {
-                            const lpBalance = res
-                            pool.methods.totalSupply().call().then(res1 => {
-                                const totalSupply = res1
-                                // this.allLp[i].proportion = lpBalance / totalSupply
-                                pool.methods.getReserves().call().then(res => {
-                                    this.$set(this.allLp[i], 'proportion', lpBalance / totalSupply)
-                                    const reserves = res
-                                    const token0 = this.allLp[i].from
-                                    const token1 = this.allLp[i].to
-                                    const decimals0 = this.getTokenDecimals(token0)
-                                    const decimals1 = this.getTokenDecimals(token1)
-                                    const token0Balance = reserves._reserve0 * this.allLp[i].proportion / Math.pow(10, decimals0)
-                                    const token1Balance = reserves._reserve1 * this.allLp[i].proportion / Math.pow(10, decimals1)
-                                    this.$set(this.allLp[i], 'token0Balance', token0Balance)
-                                    this.$set(this.allLp[i], 'token1Balance', token1Balance)
-                                    this.lpLoading = false
-                                })
-                            })
-                        })
+                        const calls = [
+                            {
+                                target: this.allLp[i].address,
+                                callData: pool.methods.balanceOf(this.fromAddress).encodeABI()
+                            },
+                            {
+                                target: this.allLp[i].address,
+                                callData: pool.methods.totalSupply().encodeABI()
+                            },
+                            {
+                                target: this.allLp[i].address,
+                                callData: pool.methods.getReserves().encodeABI()
+                            }
+                        ]
+                        const multicallContract = new web3.eth.Contract(multicallAbi, C.multicall_address)
+                        const { returnData } = await multicallContract.methods.aggregate(calls).call()
+                        const lpBalance = web3.eth.abi.decodeParameter('uint256', returnData[0])
+                        const totalSupply = web3.eth.abi.decodeParameter('uint256', returnData[1])
+                        const reserves = web3.eth.abi.decodeParameters(['uint112', 'uint112', 'uint32'], returnData[2])
+                        this.$set(this.allLp[i], 'proportion', lpBalance / totalSupply)
+                        const token0 = this.allLp[i].from
+                        const token1 = this.allLp[i].to
+                        const decimals0 = this.getTokenDecimals(token0)
+                        const decimals1 = this.getTokenDecimals(token1)
+                        const token0Balance = reserves[0] * this.allLp[i].proportion / Math.pow(10, decimals0)
+                        const token1Balance = reserves[1] * this.allLp[i].proportion / Math.pow(10, decimals1)
+                        this.$set(this.allLp[i], 'token0Balance', token0Balance)
+                        this.$set(this.allLp[i], 'token1Balance', token1Balance)
+                        this.lpLoading = false
+
+                        // pool.methods.balanceOf(this.fromAddress).call().then(res => {
+                        //     const lpBalance = res
+                        //     pool.methods.totalSupply().call().then(res1 => {
+                        //         const totalSupply = res1
+                        //         // this.allLp[i].proportion = lpBalance / totalSupply
+                        //         pool.methods.getReserves().call().then(res => {
+                        //             this.$set(this.allLp[i], 'proportion', lpBalance / totalSupply)
+                        //             const reserves = res
+                        //             const token0 = this.allLp[i].from
+                        //             const token1 = this.allLp[i].to
+                        //             const decimals0 = this.getTokenDecimals(token0)
+                        //             const decimals1 = this.getTokenDecimals(token1)
+                        //             const token0Balance = reserves._reserve0 * this.allLp[i].proportion / Math.pow(10, decimals0)
+                        //             const token1Balance = reserves._reserve1 * this.allLp[i].proportion / Math.pow(10, decimals1)
+                        //             this.$set(this.allLp[i], 'token0Balance', token0Balance)
+                        //             this.$set(this.allLp[i], 'token1Balance', token1Balance)
+                        //             this.lpLoading = false
+                        //         })
+                        //     })
+                        // })
                         // const reserves = await pool.methods.getReserves().call()
                         // const token0 = this.allLp[i].from
                         // const token1 = this.allLp[i].to
@@ -201,9 +231,9 @@ export default {
         },
         // 监听账户切换
         onChangeAccount() {
-            if (window.ethereum) {
+            if (this.provider) {
                 const that = this
-                window.ethereum.on('accountsChanged', function(res) {
+                this.provider.on('accountsChanged', function(res) {
                     that.changeFromAddress(res[0])
                     if (!that.fromAddress) {
                         that.showAdd = 0
@@ -214,9 +244,9 @@ export default {
         },
         // 监听链是否正确
         onChangeChain() {
-            if (window.ethereum) {
+            if (this.provider) {
                 const that = this
-                window.ethereum.on('chainChanged', function(val) {
+                this.provider.on('chainChanged', function(val) {
                     const chainId = Web3.utils.numberToHex(that.chainId)
                     if (val !== chainId) {
                         that.changeNetwork(false)
@@ -229,38 +259,53 @@ export default {
             }
         },
         async initList() {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             this.loading = true
+            const calls = this.allLp.map(lp => {
+                const contractAddress = lp.address
+                const pool = new web3.eth.Contract(pairAbi, contractAddress)
+                return {
+                    target: lp.address,
+                    callData: pool.methods.balanceOf(this.fromAddress).encodeABI()
+                }
+            })
+            const multicallContract = new web3.eth.Contract(multicallAbi, C.multicall_address)
+            const { returnData } = await multicallContract.methods.aggregate(calls).call()
             for (const i in this.allLp) {
                 this.$set(this.allLp[i], 'close', true)
-
-                const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
-                // const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-                pool.methods.balanceOf(this.fromAddress).call().then(res => {
-                    const lpBalance = res
-                    this.allLp[i].lpBalance = lpBalance
-                    if (lpBalance > 0) {
-                        this.$set(this.allLp[i], 'show', true)
-                    } else {
-                        this.$set(this.allLp[i], 'show', false)
-                    }
-                }).catch(err => {
-                    console.log(err)
-                })
-
-                // this.allLp[i].lpBalance = lpBalance
-                // if (lpBalance > 0) {
-                //     this.$set(this.allLp[i], 'show', true)
-                // } else {
-                //     this.$set(this.allLp[i], 'show', false)
-                // }
+                const lpBalance = web3.eth.abi.decodeParameter('uint256', returnData[i])
+                if (lpBalance > 0) {
+                    this.$set(this.allLp[i], 'show', true)
+                } else {
+                    this.$set(this.allLp[i], 'show', false)
+                }
             }
+            // for (const i in this.allLp) {
+            //     this.$set(this.allLp[i], 'close', true)
+
+            //     const pool = new web3.eth.Contract(pairAbi, this.allLp[i].address)
+            //     // const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+            //     const calls = [
+            //         {
+            //             target: this.allLp[i].address,
+            //             callData: pool.methods.balanceOf(this.fromAddress).encodeABI()
+            //         }
+            //     ]
+            //     const multicallContract = new web3.eth.Contract(multicallAbi, C.multicall_address)
+            //     const { returnData } = await multicallContract.methods.aggregate(calls).call()
+            //     const lpBalance = web3.eth.abi.decodeParameter('uint256', returnData[0])
+            //     if (lpBalance > 0) {
+            //         this.$set(this.allLp[i], 'show', true)
+            //     } else {
+            //         this.$set(this.allLp[i], 'show', false)
+            //     }
+            // }
             this.loading = false
         },
         // 初始化
         async init() {
-            if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
+            if (this.provider) {
+                const web3 = new Web3(this.provider)
                 const accountAddress = await web3.eth.getAccounts()
                 this.changeFromAddress(accountAddress[0])
                 if (this.fromAddress) {

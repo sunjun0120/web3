@@ -183,7 +183,7 @@ export default {
         }
     },
     computed: {
-        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken']),
+        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'provider']),
         showError() {
             if (this.tokenVal1 && Number(this.tokenVal1) !== 0 && (this.tokenVal1 <= this.balance1) && this.tokenVal2) {
                 return false
@@ -193,7 +193,7 @@ export default {
         }
     },
     methods: {
-        ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'connect', 'connectWeb3']),
+        ...mapActions(baseInfoStore, ['changeFromAddress', 'changeNetwork', 'connect', 'connectWeb3', 'aggregateBalance']),
         connectWallet() {
             this.connect()
         },
@@ -217,7 +217,7 @@ export default {
             this.tokenVal2 = null
         },
         async computeValue(val, decimals, index) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             if ((this.token1 === nativeToken && this.token2 === nativeToErc20Token) || (this.token2 === nativeToken && this.token1 === nativeToErc20Token)) {
                 let amountIn
                 if (decimals === 18) {
@@ -435,7 +435,7 @@ export default {
             if (this.token1 === nativeToken) {
                 return false
             } else {
-                const web3 = new Web3(window.ethereum)
+                const web3 = new Web3(this.provider)
                 let tokenAddress1
                 let decimals1
                 let getAllowance1
@@ -462,7 +462,7 @@ export default {
         },
         async approve() {
             // erc20代币
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
             const tokenAddress1 = this.getAddress(this.token1)
             const tokenContract1 = new web3.eth.Contract(ERC20, tokenAddress1)
@@ -471,14 +471,14 @@ export default {
             this.showApprove = false
         },
         getAmountOut(amountIn, path) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const routerAddress = C.router_address
             const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
             const amountOut = routerContract.methods.getAmountsOut(amountIn, path).call()
             return amountOut
         },
         async getBalance(token) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             if (token === nativeToken) {
                 const balance = await web3.eth.getBalance(this.fromAddress).call()
                 return balance
@@ -495,7 +495,7 @@ export default {
             const message2 = this.tokenVal2 + ' ' + this.token2
             const message = 'Swapping ' + message1 + ' for ' + message2
             this.$refs.confirmWait.show(message)
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const routerAddress = C.router_address
             const routerContract = new web3.eth.Contract(routerAbi, routerAddress)
             const deadline = Math.floor(Date.now() / 1000) + 60 * 60// 1小时后过期
@@ -872,7 +872,7 @@ export default {
         },
         // 监听状态
         getStatus(val) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const that = this
             const startTime = Date.now() // 记录开始时间
             const timeout = 5 * 60 * 1000 // 设置超时时间为5分钟
@@ -920,30 +920,30 @@ export default {
             return balance
         },
         // 获取代币余额
-        async getTokenBalance(address, decimals) {
-            const web3 = new Web3(window.ethereum)
-            const contractAddress = address
-            const ethContract = new web3.eth.Contract(ERC20, contractAddress)
-            const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
-            const balanceVal = balance / Math.pow(10, decimals)
-            return balanceVal
-        },
+        // async getTokenBalance(address, decimals) {
+        //     const web3 = new Web3(this.provider)
+        //     const contractAddress = address
+        //     const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+        //     const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
+        //     const balanceVal = balance / Math.pow(10, decimals)
+        //     return balanceVal
+        // },
         // 获取所有代币余额
-        async getAllBalance() {
-            const web3 = new Web3(window.ethereum)
-            for (const i of this.allToken) {
-                if (i.name === nativeToken) { // 原生币通过钱包获取余额
-                    web3.eth.getBalance(this.fromAddress, (err, res) => {
-                        if (!err) {
-                            const balance = res / Math.pow(10, i.decimals)
-                            i.balance = balance
-                        }
-                    })
-                } else {
-                    i.balance = await this.getTokenBalance(i.address, i.decimals)
-                }
-            }
-        },
+        // async getAllBalance() {
+        //     const web3 = new Web3(this.provider)
+        //     for (const i of this.allToken) {
+        //         if (i.name === nativeToken) { // 原生币通过钱包获取余额
+        //             web3.eth.getBalance(this.fromAddress, (err, res) => {
+        //                 if (!err) {
+        //                     const balance = res / Math.pow(10, i.decimals)
+        //                     i.balance = balance
+        //                 }
+        //             })
+        //         } else {
+        //             i.balance = await this.getTokenBalance(i.address, i.decimals)
+        //         }
+        //     }
+        // },
         async getScaleTip(val) {
             if (!val) {
                 const decimals = this.getDecimals(this.token1)
@@ -971,7 +971,7 @@ export default {
         },
 
         getTokenName(val) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             for (const i in this.allToken) {
                 if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
                     return this.allToken[i].name
@@ -992,6 +992,13 @@ export default {
                 }
             }
         },
+        getTokenBalance(token) {
+            for (const i of this.allToken) {
+                if (i.name === token) {
+                    return i.balance
+                }
+            }
+        },
         getDecimals(token) {
             for (const i of this.allToken) {
                 if (i.name === token) {
@@ -1007,9 +1014,9 @@ export default {
         },
         // 监听账户切换
         onChangeAccount() {
-            if (window.ethereum) {
+            if (this.provider) {
                 const that = this
-                window.ethereum.on('accountsChanged', function(res) {
+                this.provider.on('accountsChanged', function(res) {
                     that.changeFromAddress(res[0])
                     if (res[0]) {
                         that.init()
@@ -1021,9 +1028,9 @@ export default {
         },
         // 监听链是否正确
         onChangeChain() {
-            if (window.ethereum) {
+            if (this.provider) {
                 const that = this
-                window.ethereum.on('chainChanged', function(val) {
+                this.provider.on('chainChanged', function(val) {
                     const chainId = Web3.utils.numberToHex(that.chainId)
                     if (val !== chainId) {
                         that.changeNetwork(false)
@@ -1037,7 +1044,7 @@ export default {
         },
         // 获取页面余额
         async getSwapBalance() {
-            await this.getAllBalance()
+            await this.aggregateBalance()
             this.tokenVal1 = null
             this.tokenVal2 = null
             const a = this.token1
@@ -1055,8 +1062,8 @@ export default {
         // 初始化
         async init() {
             // 获取兑换比例
-            if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
+            if (this.provider) {
+                const web3 = new Web3(this.provider)
                 const accountAddress = await web3.eth.getAccounts()
                 this.changeFromAddress(accountAddress[0])
                 if (this.fromAddress) {
@@ -1069,39 +1076,42 @@ export default {
                     if (this.network) {
                         this.loading = true
                         // 获取余额
-                        const that = this
-                        if (this.token1 === nativeToken) {
-                            web3.eth.getBalance(this.fromAddress, (err, res) => {
-                                if (!err) {
-                                    const decimals = that.getDecimals(that.token1)
-                                    const balance = res / Math.pow(10, decimals)
-                                    this.balance1 = balance
-                                }
-                            })
-                        } else {
-                            const contractAddress = this.getAddress(this.token1)
-                            const decimals2 = that.getDecimals(that.token1)
-                            const ethContract = new web3.eth.Contract(ERC20, contractAddress)
-                            const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
-                            const balanceVal = balance / Math.pow(10, decimals2)
-                            this.balance1 = balanceVal
-                        }
-                        if (this.token2 === nativeToken) {
-                            web3.eth.getBalance(this.fromAddress, (err, res) => {
-                                if (!err) {
-                                    const decimals = that.getDecimals(that.token2)
-                                    const balance = res / Math.pow(10, decimals)
-                                    this.balance2 = balance
-                                }
-                            })
-                        } else {
-                            const contractAddress = this.getAddress(this.token2)
-                            const decimals2 = that.getDecimals(that.token2)
-                            const ethContract = new web3.eth.Contract(ERC20, contractAddress)
-                            const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
-                            const balanceVal = balance / Math.pow(10, decimals2)
-                            this.balance2 = balanceVal
-                        }
+                        // const that = this
+                        // if (this.token1 === nativeToken) {
+                        //     web3.eth.getBalance(this.fromAddress, (err, res) => {
+                        //         if (!err) {
+                        //             const decimals = that.getDecimals(that.token1)
+                        //             const balance = res / Math.pow(10, decimals)
+                        //             this.balance1 = balance
+                        //         }
+                        //     })
+                        // } else {
+                        //     const contractAddress = this.getAddress(this.token1)
+                        //     const decimals2 = that.getDecimals(that.token1)
+                        //     const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+                        //     const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
+                        //     const balanceVal = balance / Math.pow(10, decimals2)
+                        //     this.balance1 = balanceVal
+                        // }
+                        // if (this.token2 === nativeToken) {
+                        //     web3.eth.getBalance(this.fromAddress, (err, res) => {
+                        //         if (!err) {
+                        //             const decimals = that.getDecimals(that.token2)
+                        //             const balance = res / Math.pow(10, decimals)
+                        //             this.balance2 = balance
+                        //         }
+                        //     })
+                        // } else {
+                        //     const contractAddress = this.getAddress(this.token2)
+                        //     const decimals2 = that.getDecimals(that.token2)
+                        //     const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+                        //     const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
+                        //     const balanceVal = balance / Math.pow(10, decimals2)
+                        //     this.balance2 = balanceVal
+                        // }
+                        await this.aggregateBalance()
+                        this.balance1 = this.getTokenBalance(this.token1)
+                        this.balance2 = this.getTokenBalance(this.token2)
 
                         this.loading = false
                     } else {

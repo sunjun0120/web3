@@ -1,71 +1,78 @@
 <template>
     <div class="jlswap-layout">
-        <el-container class="home">
-            <el-header class="header" height="70px">
-                <div class="left">
-                    <div class="logoImg">
-                        <img :src="getImg()" alt="">
-                    </div>
-                    <div class="logo">JLSwap</div>
-                    <div class="menus">
-                        <el-menu class="menu"
-                            :default-active="currentActivePath"
-                            active-text-color="#0B0B0B"
-                            text-color="#0B0B0B"
-                            background-color="transparent"
-                            mode='horizontal'
-                            router
-                            :unique-opened='true'
-                        >
-                            <template v-for="menu in MenuList">
-                                <el-submenu :key="menu.menuName" :index="menu.menuName" v-if='menu.children.length > 0' class='topSubmenu'>
-                                    <template slot="title">
-                                        <span slot="title">{{ menu.menuName }}</span>
+
+                <el-container class="home">
+                    <el-header class="header" height="70px">
+                        <div class="left">
+                            <div class="logoImg">
+                                <img :src="getImg()" alt="">
+                            </div>
+                            <div class="logo">JLSwap</div>
+                            <div class="menus">
+                                <el-menu class="menu"
+                                    :default-active="currentActivePath"
+                                    active-text-color="#0B0B0B"
+                                    text-color="#0B0B0B"
+                                    background-color="transparent"
+                                    mode='horizontal'
+                                    router
+                                    :unique-opened='true'
+                                >
+                                    <template v-for="menu in MenuList">
+                                        <el-submenu :key="menu.menuName" :index="menu.menuName" v-if='menu.children.length > 0' class='topSubmenu'>
+                                            <template slot="title">
+                                                <span slot="title">{{ menu.menuName }}</span>
+                                            </template>
+                                            <el-menu-item v-for="subMenu in menu.children" class='subMenuList'
+                                                :index="subMenu.path"
+                                                :key="subMenu.menuName"
+                                                :route="{ path: subMenu.path }"
+                                            >
+                                                <span class="subMenuTitle">{{ subMenu.menuName }}</span>
+                                            </el-menu-item>
+                                        </el-submenu>
+                                        <el-menu-item :key="menu.path" :index="menu.path" :route="{ path: menu.path }" v-else>
+                                            <span slot="title">{{ menu.menuName }}</span>
+                                        </el-menu-item>
                                     </template>
-                                    <el-menu-item v-for="subMenu in menu.children" class='subMenuList'
-                                        :index="subMenu.path"
-                                        :key="subMenu.menuName"
-                                        :route="{ path: subMenu.path }"
-                                    >
-                                        <span class="subMenuTitle">{{ subMenu.menuName }}</span>
-                                    </el-menu-item>
-                                </el-submenu>
-                                <el-menu-item :key="menu.path" :index="menu.path" :route="{ path: menu.path }" v-else>
-                                    <span slot="title">{{ menu.menuName }}</span>
-                                </el-menu-item>
-                            </template>
-                        </el-menu>
-                    </div>
-                    <div class="bridge" @click="goBridge">Bridge</div>
-                </div>
-                <div class="right">
-                    <div class="all money">TVL<span class="moneyNum">{{topTvl}}</span></div>
-                    <div class="money">JLS<span  class="moneyNum">{{farmTokenPrice}}</span></div>
-                    <div class="connectWallet" @click="connect" v-if="!fromAddress">Connect Wallet</div>
-                    <div v-else>
-                        <div class='userAddress' v-if="network">{{showFrom(fromAddress)}}</div>
-                        <div class="connectWallet" v-else>Network Error</div>
-                    </div>
-                </div>
-            </el-header>
-            <el-main class="main">
-                <transition mode="out-in" name="fade">
-                    <router-view></router-view>
-                </transition>
-            </el-main>
-            <el-footer class="footer">
-                <div class="link">
-                    <el-tooltip class="item" effect="dark" content="coming soon" placement="top">
-                        <div class="linkItem discord"></div>
-                    </el-tooltip>
-                    <el-tooltip class="item" effect="dark" content="coming soon" placement="top">
-                        <div class="linkItem tg"></div>
-                    </el-tooltip>
-                    <div class="linkItem twitter" @click="goTwitter"></div>
-                    <div class="linkItem github" @click="goGit"></div>
-                </div>
-            </el-footer>
-        </el-container>
+                                </el-menu>
+                            </div>
+                            <div class="bridge" @click="goBridge">Bridge</div>
+                        </div>
+                        <div class="right">
+                            <div class="all money">TVL<span class="moneyNum">{{topTvl}}</span></div>
+                            <div class="money">JLS<span  class="moneyNum">{{farmTokenPrice}}</span></div>
+                            <div class="connectWallet" @click="connect" v-if="!fromAddress">Connect Wallet</div>
+                            <div v-else>
+                                <div class='userAddress' v-if="network">{{showFrom(fromAddress)}}</div>
+                                <div class="connectWallet" v-else>Network Error</div>
+                            </div>
+                            <!-- <WagmiConfig :client='wagmiClient'>
+                                <RainbowKitProvider :chains='chains'>
+                                    <ConnectButton />
+                                </RainbowKitProvider>
+                            </WagmiConfig> -->
+                        </div>
+                    </el-header>
+                    <el-main class="main">
+                        <transition mode="out-in" name="fade">
+                            <router-view></router-view>
+                        </transition>
+                    </el-main>
+                    <el-footer class="footer">
+                        <div class="link">
+                            <el-tooltip class="item" effect="dark" content="coming soon" placement="top">
+                                <div class="linkItem discord"></div>
+                            </el-tooltip>
+                            <el-tooltip class="item" effect="dark" content="coming soon" placement="top">
+                                <div class="linkItem tg"></div>
+                            </el-tooltip>
+                            <div class="linkItem twitter" @click="goTwitter"></div>
+                            <div class="linkItem github" @click="goGit"></div>
+                        </div>
+                    </el-footer>
+                </el-container>
+
     </div>
 </template>
 <script>
@@ -73,6 +80,7 @@ import { chainId, farmToken } from '../constants/common'
 import Web3 from 'web3'
 import { mapState, mapActions } from 'pinia'
 import { baseInfoStore } from '../store/index'
+
 export default {
     name: '',
     data () {
@@ -100,11 +108,13 @@ export default {
             farmToken: farmToken,
             all: '$0.00',
             farmTokenPrice: '$0.00',
-            chainId: chainId
+            chainId: chainId,
+            wagmiClient: '',
+            chains: ''
         }
     },
     computed: {
-        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'allLp', 'topTvl']),
+        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'allLp', 'topTvl', 'provider']),
         currentActivePath () {
             const path = this.$route.path
             const params = this.$route.params
@@ -150,7 +160,7 @@ export default {
         },
         // 获取tokenName
         getTokenName(val) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             for (const i in this.allToken) {
                 if (val === web3.utils.toChecksumAddress(this.allToken[i].address)) {
                     return this.allToken[i].name
@@ -176,7 +186,7 @@ export default {
         },
         async init() {
             // 初始化
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const accountAddress = await web3.eth.getAccounts()
             this.changeFromAddress(accountAddress[0])
             if (this.fromAddress) {
@@ -191,9 +201,6 @@ export default {
                     for (const i of this.allToken) {
                         if (i.name === farmToken) {
                             const jlsPrice = 1 / i.baseVal
-                            // const decimals = i.decimals
-                            // const surplusVal = '$' + (1 / jlsPrice).toFixed(decimals)
-
                             const surplusVal = '$' + this.getAprShow(jlsPrice)
                             this.farmTokenPrice = surplusVal
                         }
@@ -209,9 +216,9 @@ export default {
         },
         // 监听账户切换
         onChangeAccount() {
-            if (window.ethereum) {
+            if (this.provider) {
                 const that = this
-                window.ethereum.on('accountsChanged', function(res) {
+                this.provider.on('accountsChanged', function(res) {
                     that.changeFromAddress(res[0])
                     that.init()
                 })
@@ -219,9 +226,9 @@ export default {
         },
         // 监听链是否正确
         onChangeChain() {
-            if (window.ethereum) {
+            if (this.provider) {
                 const that = this
-                window.ethereum.on('chainChanged', function(val) {
+                this.provider.on('chainChanged', function(val) {
                     const chainId = Web3.utils.numberToHex(that.chainId)
                     if (val !== chainId) {
                         that.changeNetwork(false)

@@ -170,7 +170,7 @@ export default {
         }
     },
     computed: {
-        ...mapState(baseInfoStore, ['fromAddress', 'allToken', 'allLp']),
+        ...mapState(baseInfoStore, ['fromAddress', 'allToken', 'allLp', 'provider']),
         showError() {
             if (this.tokenVal1 && Number(this.tokenVal1) !== 0 && (this.tokenVal1 <= this.balance1) && this.tokenVal2 && Number(this.tokenVal2) !== 0 && (this.tokenVal2 <= this.balance2)) {
                 return false
@@ -180,7 +180,7 @@ export default {
         }
     },
     methods: {
-        ...mapActions(baseInfoStore, ['changeFromAddress', 'getTokenScale']),
+        ...mapActions(baseInfoStore, ['changeFromAddress', 'getTokenScale', 'aggregateBalance']),
         goBack() {
             this.$emit('goback')
         },
@@ -268,7 +268,7 @@ export default {
             }
         },
         async getBalance(token) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             if (token === nativeToken) {
                 const balance = await web3.eth.getBalance(this.fromAddress).call()
                 return balance
@@ -289,7 +289,7 @@ export default {
             const message2 = this.tokenVal2 + ' ' + this.token2
             const message = 'Supplying ' + message1 + ' and ' + message2
             this.$emit('showWait', message)
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             let tokenAddress1
             let tokenAddress2
             let decimals1
@@ -408,7 +408,7 @@ export default {
         },
         async getShowApprove() {
             // 审批，查询当前用户的erc20代币对于router的授权数量
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             let tokenAddress1
             let tokenAddress2
             let decimals1
@@ -479,7 +479,7 @@ export default {
         },
         async approve() {
             // 审批，查询当前用户的erc20代币对于router的授权数量
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
             let tokenAddress1
             let tokenAddress2
@@ -557,7 +557,7 @@ export default {
         },
         // 监听状态
         getStatus(val) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const that = this
             const startTime = Date.now() // 记录开始时间
             const timeout = 5 * 60 * 1000 // 设置超时时间为5分钟
@@ -593,33 +593,33 @@ export default {
             return balance
         },
         // 获取代币余额
-        async getTokenBalance(address, decimals) {
-            const web3 = new Web3(window.ethereum)
-            const contractAddress = address
-            const fromAddress = await web3.eth.getAccounts()
-            const ethContract = new web3.eth.Contract(ERC20, contractAddress)
-            const balance = await ethContract.methods.balanceOf(fromAddress[0]).call()
-            const balanceVal = balance / Math.pow(10, decimals)
-            return balanceVal
-        },
+        // async getTokenBalance(address, decimals) {
+        //     const web3 = new Web3(this.provider)
+        //     const contractAddress = address
+        //     const fromAddress = await web3.eth.getAccounts()
+        //     const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+        //     const balance = await ethContract.methods.balanceOf(fromAddress[0]).call()
+        //     const balanceVal = balance / Math.pow(10, decimals)
+        //     return balanceVal
+        // },
         // 获取所有代币余额
-        async getAllBalance() {
-            if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
-                for (const i of this.allToken) {
-                    if (i.name === nativeToken) { // 原生币通过钱包获取余额
-                        web3.eth.getBalance(this.fromAddress, (err, res) => {
-                            if (!err) {
-                                const balance = res / Math.pow(10, 18)
-                                i.balance = balance
-                            }
-                        })
-                    } else {
-                        i.balance = await this.getTokenBalance(i.address, i.decimals)
-                    }
-                }
-            }
-        },
+        // async getAllBalance() {
+        //     if (this.provider) {
+        //         const web3 = new Web3(this.provider)
+        //         for (const i of this.allToken) {
+        //             if (i.name === nativeToken) { // 原生币通过钱包获取余额
+        //                 web3.eth.getBalance(this.fromAddress, (err, res) => {
+        //                     if (!err) {
+        //                         const balance = res / Math.pow(10, 18)
+        //                         i.balance = balance
+        //                     }
+        //                 })
+        //             } else {
+        //                 i.balance = await this.getTokenBalance(i.address, i.decimals)
+        //             }
+        //         }
+        //     }
+        // },
         getScaleTip(val) {
             if (!val) {
                 const token1Scale = this.getScale(this.token1)
@@ -662,9 +662,9 @@ export default {
             // 获取余额
             this.loading = true
             if (this.token1 || this.token2) {
-                await this.getAllBalance()
+                await this.aggregateBalance()
                 // 获取兑换比例
-                this.getTokenScale()
+                // this.getTokenScale()
                 const a = this.token1
                 const b = this.token2
                 for (const i of this.allToken) {

@@ -21,9 +21,10 @@
 <script>
 import Web3 from 'web3'
 import { ERC20 } from '../../constants/abi/ERC20'
-import { nativeToken } from '../../constants/common'
-
-import { mapState } from 'pinia'
+// import { nativeToken } from '../../constants/common'
+// import { multicallAbi } from '../../constants/abi/multicall'
+// import C from '../../constants/contractAddress'
+import { mapState, mapActions } from 'pinia'
 import { baseInfoStore } from '../../store/index'
 
 export default {
@@ -33,13 +34,15 @@ export default {
             tokenListShow: false,
             tableData: [],
             switchToken: 1,
-            loading: true
+            loading: true,
+            tryArr: []
         }
     },
     computed: {
-        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken'])
+        ...mapState(baseInfoStore, ['fromAddress', 'network', 'allToken', 'provider'])
     },
     methods: {
+        ...mapActions(baseInfoStore, ['aggregateBalance']),
         async show1(token1, token2) {
             this.tableData = this.allToken
             for (const i in this.tableData) {
@@ -87,22 +90,10 @@ export default {
         },
         // 获取所有代币余额
         async getAllBalance() {
-            if (window.ethereum) {
-                const web3 = new Web3(window.ethereum)
+            if (this.provider) {
                 if (this.fromAddress) {
                     if (this.network) {
-                        for (const i of this.allToken) {
-                            if (i.name === nativeToken) { // 原生币通过钱包获取余额
-                                web3.eth.getBalance(this.fromAddress, (err, res) => {
-                                    if (!err) {
-                                        const balance = res / Math.pow(10, 18)
-                                        i.balance = balance
-                                    }
-                                })
-                            } else {
-                                i.balance = await this.getTokenBalance(i.address, i.decimals)
-                            }
-                        }
+                        await this.aggregateBalance()
                     }
                 } else {
                     for (const i of this.allToken) {
@@ -113,13 +104,39 @@ export default {
         },
         // 获取代币余额
         async getTokenBalance(address, decimals) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const contractAddress = address
             const ethContract = new web3.eth.Contract(ERC20, contractAddress)
             const balance = await ethContract.methods.balanceOf(this.fromAddress).call()
             const balanceVal = balance / Math.pow(10, decimals)
             return balanceVal
         }
+        // 同时获取代币余额
+        // async aggregateBalance() {
+        //     const web3 = new Web3(this.provider)
+        //     const calls = this.allToken.map(token => {
+        //         const contractAddress = token.address
+        //         const ethContract = new web3.eth.Contract(ERC20, contractAddress)
+        //         return {
+        //             target: token.address,
+        //             callData: ethContract.methods.balanceOf(this.fromAddress).encodeABI()
+        //         }
+        //     })
+        //     const multicallContract = new web3.eth.Contract(multicallAbi, C.multicall_address)
+        //     const { returnData } = await multicallContract.methods.aggregate(calls).call()
+        //     for (const i in this.allToken) {
+        //         if (i > 0) {
+        //             const balance = web3.eth.abi.decodeParameter('uint256', returnData[i])
+        //             this.allToken[i].balance = balance / Math.pow(10, this.allToken[i].decimals)
+        //         } else {
+        //             web3.eth.getBalance(this.fromAddress, (err, res) => {
+        //                 if (!err) {
+        //                     this.$set(this.allToken[i], 'balance', res / Math.pow(10, this.allToken[i].decimals))
+        //                 }
+        //             })
+        //         }
+        //     }
+        // }
     }
 }
 </script>

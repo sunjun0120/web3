@@ -108,7 +108,7 @@ import { chainId, nativeToken, nativeToErc20Token } from '../../constants/common
 
 import { mapActions, mapState } from 'pinia'
 import { baseInfoStore } from '../../store/index'
-
+import { multicallAbi } from '../../constants/abi/multicall'
 import { pairAbi } from '../../constants/abi/pairAbi'
 import { routerAbi } from '../../constants/abi/routerAbi'
 import C from '../../constants/contractAddress'
@@ -137,7 +137,7 @@ export default {
         }
     },
     computed: {
-        ...mapState(baseInfoStore, ['fromAddress', 'allLp']),
+        ...mapState(baseInfoStore, ['fromAddress', 'allLp', 'provider']),
         showError() {
             if (this.tokenVal && Number(this.tokenVal) !== 0) {
                 return false
@@ -220,12 +220,28 @@ export default {
         },
         async getShowApprove() {
             // 审批，查询当前lp对于router的授权数量
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const scale = this.tokenVal / 100
             const routerAddress = C.router_address
             const pool = new web3.eth.Contract(pairAbi, this.pairAddress)
-            const lpAllowance = await pool.methods.allowance(this.fromAddress, routerAddress).call()
-            const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+            const calls = [
+                {
+                    target: this.pairAddress,
+                    callData: pool.methods.allowance(this.fromAddress, routerAddress).encodeABI()
+                },
+                {
+                    target: this.pairAddress,
+                    callData: pool.methods.balanceOf(this.fromAddress).encodeABI()
+                }
+            ]
+            const multicallContract = new web3.eth.Contract(multicallAbi, C.multicall_address)
+            const { returnData } = await multicallContract.methods.aggregate(calls).call()
+            const lpAllowance = web3.eth.abi.decodeParameter('uint256', returnData[0])
+            const lpBalance = web3.eth.abi.decodeParameter('uint256', returnData[1])
+
+            // const lpAllowance = await pool.methods.allowance(this.fromAddress, routerAddress).call()
+            // const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+
             const liquidity = parseInt(lpBalance * scale)
             const getLiquidity = web3.utils.toWei(liquidity.toString(), 'wei')
             if (Number(getLiquidity) > Number(lpAllowance)) {
@@ -236,7 +252,7 @@ export default {
         },
         async approve() {
             // 审批，查询当前lp对于router的授权数量
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const amountToApprove = '115792089237316195423570985008687907853269984665640564039457584007913129639935' // 2^256-1
             const routerAddress = C.router_address
             const pool = new web3.eth.Contract(pairAbi, this.pairAddress)
@@ -264,7 +280,7 @@ export default {
             // const message2 = this.balance2 + ' ' + this.token2
             const message = 'You will receive ' + message1 + ' and ' + message2
             this.$emit('showWait', message)
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             let tokenAddress1
             let tokenAddress2
             let decimals1
@@ -294,14 +310,33 @@ export default {
             // const balance1 = this.token1Balance * scale
             // const balance2 = this.token2Balance * scale
             if (scale === 1) {
-                const web3 = new Web3(window.ethereum)
+                const web3 = new Web3(this.provider)
                 const pool = new web3.eth.Contract(pairAbi, this.pairAddress)
-                const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
-                const totalSupply = await pool.methods.totalSupply().call()
-                const reserves = await pool.methods.getReserves().call()
+                const calls = [
+                    {
+                        target: this.pairAddress,
+                        callData: pool.methods.balanceOf(this.fromAddress).encodeABI()
+                    },
+                    {
+                        target: this.pairAddress,
+                        callData: pool.methods.totalSupply().encodeABI()
+                    },
+                    {
+                        target: this.pairAddress,
+                        callData: pool.methods.getReserves().encodeABI()
+                    }
+                ]
+                const multicallContract = new web3.eth.Contract(multicallAbi, C.multicall_address)
+                const { returnData } = await multicallContract.methods.aggregate(calls).call()
+                const lpBalance = web3.eth.abi.decodeParameter('uint256', returnData[0])
+                const totalSupply = web3.eth.abi.decodeParameter('uint256', returnData[1])
+                const reserves = web3.eth.abi.decodeParameters(['uint112', 'uint112', 'uint32'], returnData[2])
+                // const lpBalance = await pool.methods.balanceOf(this.fromAddress).call()
+                // const totalSupply = await pool.methods.totalSupply().call()
+                // const reserves = await pool.methods.getReserves().call()
                 const proportion = lpBalance / totalSupply
-                const token0Balance = parseInt(reserves._reserve0 * proportion)
-                const token1Balance = parseInt(reserves._reserve1 * proportion)
+                const token0Balance = parseInt(reserves[0] * proportion)
+                const token1Balance = parseInt(reserves[1] * proportion)
                 getAllowance1 = token0Balance
                 getAllowance2 = token1Balance
                 console.log(getAllowance1)
@@ -424,7 +459,7 @@ export default {
         },
         // 监听状态
         getStatus(val) {
-            const web3 = new Web3(window.ethereum)
+            const web3 = new Web3(this.provider)
             const that = this
             const startTime = Date.now() // 记录开始时间
             const timeout = 5 * 60 * 1000 // 设置超时时间为5分钟
